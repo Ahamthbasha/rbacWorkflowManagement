@@ -1,0 +1,48 @@
+
+import axios, {
+  type AxiosInstance,
+  type AxiosError,
+} from "axios";
+import { toast } from "react-toastify";
+import { clearUserDetails } from "../redux/slices/userSlice"; 
+import { type Dispatch, type AnyAction } from "@reduxjs/toolkit";
+import { type NavigateFunction } from "react-router-dom";
+
+export const API: AxiosInstance = axios.create({
+  baseURL: 'http://localhost:3000',
+  withCredentials: true, 
+  timeout: 10000,
+});
+
+export const configureAxiosInterceptors = (
+  dispatch: Dispatch<AnyAction>,
+  navigate: NavigateFunction
+) => {
+
+
+
+  API.interceptors.response.use(
+    (response) => response, 
+
+    (error: AxiosError) => {
+      if (error.response?.status === 401) {
+        dispatch(clearUserDetails());
+        const currentPath = window.location.pathname;
+        const isAdminRoute = currentPath.startsWith('/admin');
+        
+        if (isAdminRoute) {
+          navigate("/admin/login");
+        } else {
+          navigate("/login");
+        }
+        navigate("/login");
+      }
+
+      if (error.response?.status === 500) {
+        toast.error("Server error. Please try again later.");
+      }
+
+      return Promise.reject(error);
+    }
+  );
+};
