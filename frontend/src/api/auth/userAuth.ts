@@ -1,25 +1,6 @@
 import { API } from "../../services/axios"; 
 import userRouterEndPoints from "../../endpoints/userEndpoint"; 
 import type { LoginCredentials, RegisterCredentials } from "../../types/userInterface"; 
-export interface UserSearchResult {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
-export interface UserSearchResponse {
-  success: boolean;
-  data: UserSearchResult[];
-}
-
-export interface VerifyOTPData{
-  email : string;
-  otp:string;
-}
-
-
-
 
 export const login = async (credentials: LoginCredentials) => {
   const response = await API.post(userRouterEndPoints.userLogin, credentials);

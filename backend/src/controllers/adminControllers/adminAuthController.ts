@@ -58,7 +58,7 @@ export class AdminAuthController {
         success: true,
         message: 'Admin login successful',
         data: {
-          user: {
+          admin: {
             id: 'admin',
             email: adminEmail,
             role: 'admin',

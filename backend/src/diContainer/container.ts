@@ -6,6 +6,7 @@ import ManagerAuthController from '../controllers/managerControllers/managerAuth
 import AdminAuthController from '../controllers/adminControllers/adminAuthController';
 
 import AuthMiddleware from '../middlewares/authMiddleware';
+import RequestController from '../controllers/userControllers/requestController';
 
 
 class DIContainer {
@@ -16,6 +17,7 @@ class DIContainer {
   
 
   public userAuthController: UserAuthController;
+  public userRequestController : RequestController;
   public managerAuthController: ManagerAuthController;
   public adminAuthController: AdminAuthController;
 
@@ -29,6 +31,7 @@ class DIContainer {
     this.managerAuthController = new ManagerAuthController(this.authService)
     this.adminAuthController = new AdminAuthController(this.jwtService);
     this.authMiddleware = new AuthMiddleware(this.jwtService);
+    this.userRequestController = new RequestController()
   }
 
   public static getInstance(): DIContainer {

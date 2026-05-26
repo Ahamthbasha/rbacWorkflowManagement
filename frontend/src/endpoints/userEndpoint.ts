@@ -3,6 +3,12 @@ const userRouterEndPoints = {
     userLogin : '/api/user/login',
     userLogout : '/api/user/logout',
     userProfile : '/api/user/profile',
+    createRequest: '/api/user/requests',
+  getUserRequests: '/api/user/requests',
+  getRequestById: (requestId: string) => `/api/user/requests/${requestId}`,
+  getRequestLogs: (requestId: string) => `/api/user/requests/${requestId}/logs`,
+  respondToClarification: (requestId: string) => `/api/user/requests/${requestId}/clarify`,
+  cancelRequest: (requestId: string) => `/api/user/requests/${requestId}/cancel`,
 }
 
 export default userRouterEndPoints

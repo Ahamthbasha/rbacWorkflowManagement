@@ -5,6 +5,9 @@ import Register from "../pages/user/Auth/Register";
 import { Routes, Route } from "react-router-dom";
 import UserSessionRoute from "../protecter/userProtecter/UserSessionRoute";
 import UserPrivateRoute from "../protecter/userProtecter/UserPrivateRoute";
+import CreateRequest from "../pages/user/request/CreateRequest";
+import MyRequests from "../pages/user/request/MyRequests";
+import RequestDetail from "../pages/user/request/RequestDetail";
 const UserRouter = () => {
   return (
     <Routes>
@@ -27,7 +30,11 @@ const UserRouter = () => {
         />
 
         <Route element={<UserPrivateRoute/>}>
-
+        <Route element={<UserLayout/>}>
+        <Route  path='/createRequest' element={<CreateRequest/>}/>
+        <Route path="/myRequests" element={<MyRequests/>}/>
+        <Route path="/requests/:requestId" element={<RequestDetail/>}/>
+        </Route>
         </Route>
     </Routes>
   );

@@ -182,15 +182,6 @@ const LoginPage = () => {
                 )}
               </div>
 
-              {/* Demo Credentials Hint */}
-              <div className="rounded-lg bg-blue-50 p-4">
-                <p className="text-xs text-blue-600 text-center">
-                  <span className="font-semibold">Demo Credentials:</span><br />
-                  Email: admin@resumescanner.com<br />
-                  Password: Admin@123
-                </p>
-              </div>
-
               <button
                 type="submit"
                 disabled={isLoading}

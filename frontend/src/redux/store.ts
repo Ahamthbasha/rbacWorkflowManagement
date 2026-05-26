@@ -1,9 +1,11 @@
 // store.ts
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import userReducer from './slices/userSlice';
+import managerReducer from './slices/managerSlice'
 
 const rootReducers = combineReducers({
-  user: userReducer
+  user: userReducer,
+  manager:managerReducer
 });
 
 const store = configureStore({

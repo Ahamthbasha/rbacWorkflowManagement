@@ -1,146 +1,52 @@
 import userRouterEndPoints from "../../endpoints/userEndpoint";
 import { API } from "../../services/axios";
 
-export interface JobRole {
-  id: string;
-  title: string;
-  description: string;
-  requiredSkills: string[];
-  category?: string;
-}
+import type {
+  CreateRequestData,
+  ClarificationResponseData,
+  WorkflowRequest,
+  RequestLog,
+  ApiResponse
+} from "../../types/requestTypes";
 
-export interface UploadResumeResponse {
-  success: boolean;
-  message: string;
-  data: {
-    resumeId: string;
-    fileName: string;
-    extractedSkills: string[];
-    categorizedSkills: Record<string, string[]>;
-    pageCount: number;
-  };
-}
-
-export interface CompareResumeRequest {
-  resumeId: string;
-  jobRoleId: string;
-}
-
-export interface CompareResumeResponse {
-  success: boolean;
-  message: string;
-  data: {
-    matchPercentage: number;
-    matchedSkills: string[];
-    missingSkills: string[];
-    extraSkills: string[];
-    suggestions: string[];
-    scanId: string;
-  };
-}
-
-export interface ScanHistoryItem {
-  id: string;
-  jobRoleTitle: string;
-  fileName: string;
-  matchPercentage: number;
-  matchedSkills: string[];
-  missingSkills: string[];
-  suggestions: string[];
-  createdAt: string;
-}
-
-export interface ScanHistoryResponse {
-  success: boolean;
-  data: {
-    scans: ScanHistoryItem[];
-    total: number;
-    page: number;
-    totalPages: number;
-  };
-}
-
-export interface ScanDetailData {
-  id: string;
-  jobRoleTitle: string;
-  fileName: string;
-  matchPercentage: number;
-  matchedSkills: string[];
-  missingSkills: string[];
-  extraSkills: string[];
-  suggestions: string[];
-  createdAt: string;
-  resume?: {
-    id: string;
-    fileName: string;
-    extractedSkills: string[];
-    categorizedSkills: Record<string, string[]>;
-  };
-}
-
-export interface ScanDetailResponse {
-  success: boolean;
-  data: ScanDetailData;
-}
-
-export interface UserResume {
-  id: string;
-  fileName: string;
-  extractedSkills: string[];
-  createdAt: string;
-}
-
-export interface UserResumesResponse {
-  success: boolean;
-  data: UserResume[];
-}
-
-
-export const getJobRoles = async (): Promise<{ success: boolean; data: JobRole[] }> => {
-  const response = await API.get(userRouterEndPoints.jobRoles);
+// Create a new request
+export const createRequest = async (data: CreateRequestData): Promise<ApiResponse<WorkflowRequest>> => {
+  const response = await API.post(userRouterEndPoints.createRequest, data);
   return response.data;
 };
 
-export const uploadResume = async (file: File): Promise<UploadResumeResponse> => {
-  const formData = new FormData();
-  formData.append('resume', file);
-  
-  const response = await API.post(userRouterEndPoints.uploadResume, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+export const getUserRequests = async (
+  params?: Record<string, string>
+): Promise<ApiResponse<WorkflowRequest[]>> => {
+  const response = await API.get(userRouterEndPoints.getUserRequests, {
+    params,
   });
   return response.data;
 };
 
-export const compareResume = async (data: CompareResumeRequest): Promise<CompareResumeResponse> => {
-  const response = await API.post(userRouterEndPoints.compareResume, data);
+// Get a specific request by ID
+export const getRequestById = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
+  const response = await API.get(userRouterEndPoints.getRequestById(requestId));
   return response.data;
 };
 
-export const getScanHistory = async (page: number = 1, limit: number = 10): Promise<ScanHistoryResponse> => {
-  const response = await API.get(userRouterEndPoints.scanHistory, {
-    params: { page, limit },
-  });
+// Get request logs/history by REQUEST ID
+export const getRequestLogs = async (requestId: string): Promise<ApiResponse<RequestLog[]>> => {
+  const response = await API.get(userRouterEndPoints.getRequestLogs(requestId));
   return response.data;
 };
 
-export const getScanDetail = async (scanId: string): Promise<ScanDetailResponse> => {
-  const response = await API.get(userRouterEndPoints.scanDetail(scanId));
+// Respond to clarification request from manager
+export const respondToClarification = async (
+  requestId: string,
+  data: ClarificationResponseData
+): Promise<ApiResponse<WorkflowRequest>> => {
+  const response = await API.put(userRouterEndPoints.respondToClarification(requestId), data);
   return response.data;
 };
 
-export const deleteScanHistory = async (scanId: string): Promise<{ success: boolean; message: string }> => {
-  const response = await API.delete(userRouterEndPoints.deleteScan(scanId));
-  return response.data;
-};
-
-export const getUserResumes = async (): Promise<UserResumesResponse> => {
-  const response = await API.get(userRouterEndPoints.userResumes);
-  return response.data;
-};
-
-export const deleteResume = async (resumeId: string): Promise<{ success: boolean; message: string }> => {
-  const response = await API.delete(userRouterEndPoints.deleteResume(resumeId));
+// Cancel a pending request
+export const cancelRequest = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
+  const response = await API.delete(userRouterEndPoints.cancelRequest(requestId));
   return response.data;
 };

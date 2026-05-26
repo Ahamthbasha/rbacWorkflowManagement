@@ -9,7 +9,7 @@ import { type Dispatch, type AnyAction } from "@reduxjs/toolkit";
 import { type NavigateFunction } from "react-router-dom";
 
 export const API: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true, 
   timeout: 10000,
 });

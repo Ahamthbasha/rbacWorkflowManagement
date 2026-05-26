@@ -108,7 +108,7 @@ const Header = () => {
 
     const roleSpecificItems = {
       user: [
-        { path: "/my-requests", label: "My Requests", icon: FileText, roles: ["user"] },
+        { path: "/myRequests", label: "My Requests", icon: FileText, roles: ["user"] },
         { path: "/create-request", label: "Create Request", icon: CheckCircle, roles: ["user"] },
       ],
       manager: [

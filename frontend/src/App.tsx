@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { configureAxiosInterceptors } from "./services/axios"; 
 import UserRouter from './router/UserRouter';
 import AdminRouter from "./router/AdminRouter";
+import ManagerRouter from "./router/ManagerRouter";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -21,6 +22,7 @@ const App = () => {
       <Routes>
         <Route path="/*" element={<UserRouter />} />
         <Route path="/admin/*" element={<AdminRouter />} />
+        <Route path="/manager/*" element={<ManagerRouter/>}/>
       </Routes>
     </>
   );

@@ -1,4 +1,4 @@
-// pages/user/Auth/Login.tsx
+// pages/manager/Auth/Login.tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -6,11 +6,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { type AxiosError } from "axios";
 import { useDispatch } from "react-redux";
-import { Mail, Lock, Shield, LogIn } from "lucide-react";
+import { Mail, Lock, Building2, LogIn, Shield } from "lucide-react";
 import InputField from "../../../components/common/InputField"; 
 import PasswordField from "../../../components/common/PasswordField"; 
-import { login } from "../../../api/auth/userAuth" 
-import { setUser } from "../../../redux/slices/userSlice";
+import { managerLogin } from "../../../api/auth/managerAuth";
+import { setManager } from "../../../redux/slices/managerSlice";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -19,18 +19,12 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-interface ValidationError {
-  msg: string;
-  path: string;
-}
-
 interface ErrorResponse {
   success: boolean;
   message?: string;
-  errors?: ValidationError[];
 }
 
-export default function Login() {
+export default function ManagerLogin() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -44,90 +38,62 @@ export default function Login() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      const res = await login(data);
+      const res = await managerLogin(data);
 
-      if (res.success) {
-        const { user } = res.data;
-        
+      if (res.success && res.data?.user) {
+        // Store manager data in Redux
         dispatch(
-          setUser({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
+          setManager({
+            _id: res.data.user.id,
+            name: res.data.user.name,
+            email: res.data.user.email,
+            role: res.data.user.role,
+            department: res.data.user.department,
+            isActive: res.data.user.isActive,
           })
         );
         
-        toast.success(`Welcome back, ${user.name}!`);
-        
-        // Redirect based on role
-        if (user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (user.role === 'manager') {
-          navigate('/manager/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+        toast.success(`Welcome back, ${res.data.user.name}!`);
+        navigate("/manager/dashboard");
       }
     } catch (error: unknown) {
       const err = error as AxiosError<ErrorResponse>;
-
-      if (err.response?.data) {
-        const responseData = err.response.data;
-
-        if (responseData.errors && Array.isArray(responseData.errors)) {
-          responseData.errors.forEach((validationErr, index) => {
-            toast.error(validationErr.msg, {
-              toastId: `error-${validationErr.path}-${index}`,
-            });
-          });
-        } else if (responseData.message) {
-          toast.error(responseData.message);
-        } else {
-          toast.error("Login failed. Please try again.");
-        }
-      } else {
-        toast.error("Network error. Please check your connection and try again.");
-      }
+      toast.error(err.response?.data?.message || "Login failed. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 py-12 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        {/* Main Card */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 sm:p-10 border border-gray-200 dark:border-gray-700">
           
-          {/* Logo & Title Section */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
-              <Shield className="h-10 w-10 text-white" />
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl mb-6 shadow-lg">
+              <Building2 className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              RBA Workflow
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+              Manager Portal
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Secure Role-Based Access Control System
+              Role-Based Access Control System
             </p>
           </div>
 
-          {/* Welcome Message */}
           <div className="text-center mb-6">
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-              Welcome Back
+              Welcome Back, Manager
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Sign in to access your dashboard
+              Sign in to review and manage requests
             </p>
           </div>
 
-          {/* Login Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <InputField
               label="Email Address"
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="manager@example.com"
               icon={<Mail className="h-4 w-4 text-gray-400" />}
               {...register("email")}
               error={errors.email?.message}
@@ -142,14 +108,13 @@ export default function Login() {
               error={errors.password?.message}
             />
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isSubmitting}
               className="
                 w-full flex justify-center items-center py-3 px-4 
-                bg-gradient-to-r from-blue-600 to-purple-600 
-                hover:from-blue-700 hover:to-purple-700
+                bg-gradient-to-r from-blue-600 to-cyan-600 
+                hover:from-blue-700 hover:to-cyan-700
                 text-white font-semibold rounded-lg
                 focus:outline-none focus:ring-4 focus:ring-blue-500/50
                 transition-all duration-200 transform hover:scale-[1.02]
@@ -174,24 +139,31 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Sign Up Link */}
           <div className="mt-8 text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              Don't have an account?{" "}
+              Don't have a manager account?{" "}
               <Link 
-                to="/register" 
+                to="/manager/register" 
                 className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
               >
-                Create Account
+                Register as Manager
               </Link>
             </p>
           </div>
 
-          {/* Security Note */}
+          <div className="mt-4 text-center">
+            <Link 
+              to="/login" 
+              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+            >
+              ← Back to User Login
+            </Link>
+          </div>
+
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-500 flex items-center justify-center">
               <Shield className="h-3 w-3 mr-1" />
-              Your credentials are securely encrypted
+              Manager credentials are securely encrypted
             </p>
           </div>
         </div>
