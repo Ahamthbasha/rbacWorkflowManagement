@@ -7,7 +7,7 @@ import {
 import container from '../diContainer/container';  
 
 const router = Router();
-const { managerAuthController, authMiddleware } = container;
+const { managerAuthController, authMiddleware, managerRequestController } = container;
 
 router.post(
   '/register',
@@ -35,6 +35,49 @@ router.post(
 router.get(
   '/me',
   managerAuthController.getCurrentManager.bind(managerAuthController)
+);
+
+// Dashboard
+router.get(
+  '/dashboard/stats',
+  managerRequestController.getDashboardStats.bind(managerRequestController)
+);
+
+// Request management
+router.get(
+  '/requests',
+  managerRequestController.getAllRequests.bind(managerRequestController)
+);
+
+router.get(
+  '/requests/pending',
+  managerRequestController.getPendingRequests.bind(managerRequestController)
+);
+
+router.get(
+  '/requests/:requestId',
+  managerRequestController.getRequestById.bind(managerRequestController)
+);
+
+router.get(
+  '/requests/:requestId/logs',
+  managerRequestController.getRequestLogs.bind(managerRequestController)
+);
+
+// Actions
+router.put(
+  '/requests/:requestId/approve',
+  managerRequestController.approveRequest.bind(managerRequestController)
+);
+
+router.put(
+  '/requests/:requestId/reject',
+  managerRequestController.rejectRequest.bind(managerRequestController)
+);
+
+router.post(
+  '/requests/:requestId/clarify',
+  managerRequestController.requestClarification.bind(managerRequestController)
 );
 
 export default router;

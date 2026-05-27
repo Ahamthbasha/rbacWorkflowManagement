@@ -1,12 +1,20 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { type UserSlice } from "./interface/IUserSlice";
 
-const initialState: UserSlice = {
-  userId: null,
-  name: null,
-  email: null,
-  role: null,
+// ✅ Rehydrate from localStorage on app load
+const loadUserFromStorage = (): UserSlice => {
+  try {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      return JSON.parse(stored) as UserSlice;
+    }
+  } catch {
+    localStorage.removeItem("user"); // clear corrupt data
+  }
+  return { userId: null, name: null, email: null, role: null };
 };
+
+const initialState: UserSlice = loadUserFromStorage(); // ✅ was hardcoded nulls
 
 const userSlice = createSlice({
   name: "user",
@@ -21,20 +29,17 @@ const userSlice = createSlice({
         role: string;
       }>
     ) => {
-      const { _id, name,email, role } =
-        action.payload;
-
+      const { _id, name, email, role } = action.payload;
       state.userId = _id;
-      state.name = name
+      state.name = name;
       state.email = email;
       state.role = role;
-
       localStorage.setItem("user", JSON.stringify(state));
     },
 
     clearUserDetails: (state) => {
       state.userId = null;
-      state.name = null
+      state.name = null;
       state.email = null;
       state.role = null;
       localStorage.removeItem("user");

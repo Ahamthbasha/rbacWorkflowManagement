@@ -33,7 +33,7 @@ const LoginPage = () => {
         localStorage.setItem("isAdminAuthenticated", "true");
         
         toast.success(response.message);
-        navigate("/admin/job-roles");
+        navigate("/admin/dashboard");
       } else {
         toast.error(response.message);
       }

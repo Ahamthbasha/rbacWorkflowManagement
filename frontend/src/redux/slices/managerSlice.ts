@@ -2,14 +2,35 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { type IManagerSlice } from "./interface/IManagerSlice";
 
-const initialState: IManagerSlice = {
-  managerId: null,
-  name: null,
-  email: null,
-  role: null,
-  department: null,
-  isActive: null,
+// Rehydrate from localStorage on app load
+const loadManagerFromStorage = (): IManagerSlice => {
+  try {
+    const stored = localStorage.getItem("manager");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        managerId: parsed.managerId ?? null,
+        name: parsed.name ?? null,
+        email: parsed.email ?? null,
+        role: parsed.role ?? null,
+        department: parsed.department ?? null,
+        isActive: parsed.isActive ?? null,
+      };
+    }
+  } catch {
+    localStorage.removeItem("manager");
+  }
+  return {
+    managerId: null,
+    name: null,
+    email: null,
+    role: null,
+    department: null,
+    isActive: null,
+  };
 };
+
+const initialState: IManagerSlice = loadManagerFromStorage();
 
 const managerSlice = createSlice({
   name: "manager",
@@ -32,7 +53,7 @@ const managerSlice = createSlice({
       state.name = name;
       state.email = email;
       state.role = role;
-      state.department = department || null;
+      state.department = department ?? null;
       state.isActive = isActive !== undefined ? isActive : true;
 
       localStorage.setItem("manager", JSON.stringify(state));

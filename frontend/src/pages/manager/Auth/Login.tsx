@@ -54,7 +54,7 @@ export default function ManagerLogin() {
         );
         
         toast.success(`Welcome back, ${res.data.user.name}!`);
-        navigate("/manager/dashboard");
+        navigate("/manager/request");
       }
     } catch (error: unknown) {
       const err = error as AxiosError<ErrorResponse>;
@@ -153,7 +153,7 @@ export default function ManagerLogin() {
 
           <div className="mt-4 text-center">
             <Link 
-              to="/login" 
+              to="/manager/login" 
               className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
             >
               ← Back to User Login

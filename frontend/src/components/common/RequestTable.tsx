@@ -2,17 +2,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Eye, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle,
-  Filter,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  FileText
+  Eye, Clock, CheckCircle, XCircle, AlertCircle,
+  Filter, Search, ChevronLeft, ChevronRight, RefreshCw, FileText
 } from 'lucide-react';
 import type { WorkflowRequest, RequestStatus, RequestPriority, RequestCategory } from '../../types/requestTypes';
 
@@ -40,6 +31,7 @@ interface RequestTableProps {
   onRefresh?: () => void;
   onFilterChange?: (filters: FilterOptions) => void;
   showActions?: boolean;
+  customAction?: (request: WorkflowRequest) => React.ReactNode; // ← added
 }
 
 const RequestTable: React.FC<RequestTableProps> = ({
@@ -49,7 +41,8 @@ const RequestTable: React.FC<RequestTableProps> = ({
   onPageChange,
   onRefresh,
   onFilterChange,
-  showActions = true
+  showActions = true,
+  customAction, // ← added
 }) => {
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
@@ -63,7 +56,7 @@ const RequestTable: React.FC<RequestTableProps> = ({
       rejected: { icon: XCircle, color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', label: 'Rejected' },
       clarification_needed: { icon: AlertCircle, color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', label: 'Clarification Needed' },
       closed: { icon: CheckCircle, color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', label: 'Closed' },
-      cancelled: { icon: XCircle, color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', label: 'Cancelled' }
+      cancelled: { icon: XCircle, color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', label: 'Cancelled' },
     };
     const { icon: Icon, color, label } = config[status] || config.submitted;
     return (
@@ -79,7 +72,7 @@ const RequestTable: React.FC<RequestTableProps> = ({
       low: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', label: 'Low' },
       medium: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', label: 'Medium' },
       high: { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', label: 'High' },
-      urgent: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', label: 'Urgent' }
+      urgent: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', label: 'Urgent' },
     };
     const { color, label } = config[priority];
     return (
@@ -91,12 +84,8 @@ const RequestTable: React.FC<RequestTableProps> = ({
 
   const getCategoryBadge = (category: RequestCategory) => {
     const labels: Record<RequestCategory, string> = {
-      access: 'Access',
-      software: 'Software',
-      hardware: 'Hardware',
-      leave: 'Leave',
-      budget: 'Budget',
-      other: 'Other'
+      access: 'Access', software: 'Software', hardware: 'Hardware',
+      leave: 'Leave', budget: 'Budget', other: 'Other',
     };
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
@@ -108,31 +97,18 @@ const RequestTable: React.FC<RequestTableProps> = ({
   const handleFilterChange = (key: keyof FilterOptions, value: string) => {
     const newFilters = { ...filters, [key]: value || undefined };
     setFilters(newFilters);
-    if (onFilterChange) {
-      onFilterChange(newFilters);
-    }
+    onFilterChange?.(newFilters);
   };
 
-  const handleSearch = () => {
-    if (onFilterChange) {
-      onFilterChange(filters);
-    }
-  };
+  const handleSearch = () => onFilterChange?.(filters);
 
   const resetFilters = () => {
     setFilters({});
-    if (onFilterChange) {
-      onFilterChange({});
-    }
+    onFilterChange?.({});
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -140,15 +116,10 @@ const RequestTable: React.FC<RequestTableProps> = ({
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              My Requests
-            </h2>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              ({pagination.total} total)
-            </span>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">My Requests</h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400">({pagination.total} total)</span>
           </div>
           <div className="flex items-center space-x-2">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -163,8 +134,8 @@ const RequestTable: React.FC<RequestTableProps> = ({
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`p-2 border rounded-lg transition-colors ${
-                showFilters 
-                  ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20' 
+                showFilters
+                  ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20'
                   : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
@@ -181,14 +152,11 @@ const RequestTable: React.FC<RequestTableProps> = ({
           </div>
         </div>
 
-        {/* Filters Panel */}
         {showFilters && (
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                 <select
                   value={filters.status || ''}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -205,9 +173,7 @@ const RequestTable: React.FC<RequestTableProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Category
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                 <select
                   value={filters.category || ''}
                   onChange={(e) => handleFilterChange('category', e.target.value)}
@@ -223,9 +189,7 @@ const RequestTable: React.FC<RequestTableProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Priority
-                </label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                 <select
                   value={filters.priority || ''}
                   onChange={(e) => handleFilterChange('priority', e.target.value)}
@@ -259,13 +223,9 @@ const RequestTable: React.FC<RequestTableProps> = ({
       ) : requests.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-            No requests found
-          </h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No requests found</h3>
           <p className="text-gray-500 dark:text-gray-400">
-            {Object.keys(filters).length > 0 
-              ? 'Try adjusting your filters' 
-              : 'Create your first request to get started'}
+            {Object.keys(filters).length > 0 ? 'Try adjusting your filters' : 'Create your first request to get started'}
           </p>
         </div>
       ) : (
@@ -273,25 +233,13 @@ const RequestTable: React.FC<RequestTableProps> = ({
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-900/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Request
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Submitted
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Request</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Submitted</th>
                 {showActions && (
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 )}
               </tr>
             </thead>
@@ -299,36 +247,28 @@ const RequestTable: React.FC<RequestTableProps> = ({
               {requests.map((request) => (
                 <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                   <td className="px-6 py-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {request.title}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
-                        {request.description}
-                      </p>
-                    </div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{request.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{request.description}</p>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getCategoryBadge(request.category)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getPriorityBadge(request.priority)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(request.status)}
-                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">{getCategoryBadge(request.category)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{getPriorityBadge(request.priority)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(request.status)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(request.submittedAt)}
                   </td>
                   {showActions && (
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => navigate(`/requests/${request.id}`)}
-                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </button>
+                      {customAction ? (
+                        customAction(request)
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/requests/${request.id}`)}
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </button>
+                      )}
                     </td>
                   )}
                 </tr>

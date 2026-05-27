@@ -11,6 +11,7 @@ import { getSequelize } from "./config/database";
 import userRouter from './routes/userRouter'
 import adminRouter from './routes/adminRouter'
 import managerRouter from './routes/managerRouter'
+import AdminAuthController from './controllers/adminControllers/adminAuthController';
 
 const app = express();
 const PORT = process.env.PORT;
@@ -85,8 +86,9 @@ app.listen(PORT, () => {
 (async () => {
     try {
         const sequelize = await getSequelize();
-        await sequelize.sync({ alter: false });
+        await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
         console.log('✅ Models synced with database');
+        await AdminAuthController.initializeAdmin();
     } catch (error) {
         console.error('❌ Database initialization error:', error);
     }

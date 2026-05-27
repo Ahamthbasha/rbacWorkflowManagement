@@ -21,7 +21,7 @@ const UserLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   const user = useSelector((state: RootState) => state.user);
-
+  console.log('userInfo',user)
   const handleLogout = async () => {
     try {
       await logout();

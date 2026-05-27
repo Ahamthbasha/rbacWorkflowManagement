@@ -7,7 +7,7 @@ import {
 import container from '../diContainer/container';  
 
 const router = Router();
-const { adminAuthController, authMiddleware } = container;
+const { adminAuthController, authMiddleware, adminRequestController } = container;
 
 router.post(
   '/login',
@@ -26,9 +26,35 @@ router.post(
 );
 
 router.get(
-  '/me',
-  adminAuthController.getCurrentAdmin.bind(adminAuthController)
+  '/dashboard/stats',
+  adminRequestController.getDashboardStats.bind(adminRequestController)
 );
 
+// Request management
+router.get(
+  '/requests',
+  adminRequestController.getAllRequests.bind(adminRequestController)
+);
+
+router.get(
+  '/requests/:requestId',
+  adminRequestController.getRequestById.bind(adminRequestController)
+);
+
+router.get(
+  '/requests/:requestId/logs',
+  adminRequestController.getRequestLogs.bind(adminRequestController)
+);
+
+// Admin actions
+router.put(
+  '/requests/:requestId/close',
+  adminRequestController.closeRequest.bind(adminRequestController)
+);
+
+router.put(
+  '/requests/:requestId/reopen',
+  adminRequestController.reopenRequest.bind(adminRequestController)
+);
 
 export default router;

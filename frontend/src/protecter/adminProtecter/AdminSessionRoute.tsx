@@ -8,7 +8,7 @@ const AdminSessionRoute: React.FC<AdminSessionRouteProps> = ({ children }) => {
     const isAdminAuthenticated = localStorage.getItem('isAdminAuthenticated');
 
     if (isAdminAuthenticated) {
-        return <Navigate to='/admin/job-roles' replace />;
+        return <Navigate to='/admin/dashboard' replace />;
     }
 
     return <>{children}</>;

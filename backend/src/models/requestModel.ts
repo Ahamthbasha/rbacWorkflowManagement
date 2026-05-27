@@ -2,32 +2,34 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
 import User from "./userModel";
-import RequestLog from "./requestLogModel"; // ✅ Add this import
+import RequestLog from "./requestLogModel";
 
 export enum RequestStatus {
-  SUBMITTED = 'submitted',
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  CLARIFICATION = 'clarification_needed',
-  CLOSED = 'closed',
-  CANCELLED = 'cancelled'
+  SUBMITTED = "submitted",
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  CLARIFICATION = "clarification_needed",
+  CLOSED = "closed",
+  CANCELLED = "cancelled",
+  REOPENED = "reopened",
+  RESUBMITTED = "resubmitted",
 }
 
 export enum RequestPriority {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  URGENT = 'urgent'
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  URGENT = "urgent",
 }
 
 export enum RequestCategory {
-  ACCESS = 'access',
-  SOFTWARE = 'software',
-  HARDWARE = 'hardware',
-  LEAVE = 'leave',
-  BUDGET = 'budget',
-  OTHER = 'other'
+  ACCESS = "access",
+  SOFTWARE = "software",
+  HARDWARE = "hardware",
+  LEAVE = "leave",
+  BUDGET = "budget",
+  OTHER = "other",
 }
 
 interface RequestAttributes {
@@ -46,13 +48,38 @@ interface RequestAttributes {
   submittedAt: Date;
   approvedAt: Date | null;
   rejectedAt: Date | null;
+  closedAt: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  reopenReason: string | null;
+  reopenedAt: Date | null;
+  resubmittedAt: Date | null;
+  lastEditedAt: Date | null;
+  version: number;
 }
 
-interface RequestCreationAttributes extends Optional<RequestAttributes,
-  'id' | 'status' | 'managerId' | 'adminId' | 'comments' | 'clarificationRequest' | 'clarificationResponse' | 'approvedAt' | 'rejectedAt' | 'submittedAt'
+// Add closedAt to the optional creation attributes
+interface RequestCreationAttributes extends Optional<
+  RequestAttributes,
+  | "id"
+  | "status"
+  | "managerId"
+  | "adminId"
+  | "comments"
+  | "clarificationRequest"
+  | "clarificationResponse"
+  | "approvedAt"
+  | "rejectedAt"
+  | "closedAt"
+  | "submittedAt"
+  | "createdAt"
+  | "updatedAt"
 > {}
 
-class Request extends Model<RequestAttributes, RequestCreationAttributes> implements RequestAttributes {
+class Request
+  extends Model<RequestAttributes, RequestCreationAttributes>
+  implements RequestAttributes
+{
   public id!: string;
   public title!: string;
   public description!: string;
@@ -68,6 +95,7 @@ class Request extends Model<RequestAttributes, RequestCreationAttributes> implem
   public submittedAt!: Date;
   public approvedAt!: Date | null;
   public rejectedAt!: Date | null;
+  public closedAt!: Date | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -105,17 +133,17 @@ Request.init(
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'users', key: 'id' },
+      references: { model: "users", key: "id" },
     },
     managerId: {
       type: DataTypes.UUID,
       allowNull: true,
-      references: { model: 'users', key: 'id' },
+      references: { model: "users", key: "id" },
     },
     adminId: {
       type: DataTypes.UUID,
       allowNull: true,
-      references: { model: 'users', key: 'id' },
+      references: { model: "users", key: "id" },
     },
     comments: {
       type: DataTypes.TEXT,
@@ -141,6 +169,10 @@ Request.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    closedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -153,7 +185,7 @@ Request.init(
           const user = await User.findByPk(request.userId);
           if (user && user.department) {
             const manager = await User.findOne({
-              where: { department: user.department, role: 'manager' }
+              where: { department: user.department, role: "manager" },
             });
             if (manager) {
               request.managerId = manager.id;
@@ -162,30 +194,30 @@ Request.init(
         }
       },
     },
-  }
+  },
 );
 
 // ── User ↔ Request associations ────────────────────────────────────────────
-Request.belongsTo(User, { as: 'user',    foreignKey: 'userId' });
-Request.belongsTo(User, { as: 'manager', foreignKey: 'managerId' });
-Request.belongsTo(User, { as: 'admin',   foreignKey: 'adminId' });
-User.hasMany(Request, { as: 'requests', foreignKey: 'userId' });
+Request.belongsTo(User, { as: "user", foreignKey: "userId" });
+Request.belongsTo(User, { as: "manager", foreignKey: "managerId" });
+Request.belongsTo(User, { as: "admin", foreignKey: "adminId" });
+User.hasMany(Request, { as: "requests", foreignKey: "userId" });
 
 // ── Request ↔ RequestLog associations ──────────────────────────────────────
-Request.hasMany(RequestLog, {             // ✅ One request → many log entries
-  as: 'logs',
-  foreignKey: 'requestId',
-  onDelete: 'CASCADE',
+Request.hasMany(RequestLog, {
+  as: "logs",
+  foreignKey: "requestId",
+  onDelete: "CASCADE",
 });
-RequestLog.belongsTo(Request, {           // ✅ Each log entry → one request
-  as: 'request',
-  foreignKey: 'requestId',
+RequestLog.belongsTo(Request, {
+  as: "request",
+  foreignKey: "requestId",
 });
 
 // ── RequestLog ↔ User (changedBy) association ───────────────────────────────
-RequestLog.belongsTo(User, {             // ✅ Bonus: lets you include the actor
-  as: 'changedByUser',
-  foreignKey: 'changedBy',
+RequestLog.belongsTo(User, {
+  as: "changedByUser",
+  foreignKey: "changedBy",
 });
 
 export default Request;

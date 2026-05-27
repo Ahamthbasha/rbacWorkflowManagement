@@ -3,23 +3,14 @@ import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link, NavLink, Outlet } from 'react-router-dom';
 import { 
-  LayoutDashboard,
-  Users, 
-  Settings, 
+  FileText,
+  Clock,
   Menu, 
   X,
   Shield,
-  Bell,
-  Search,
   ChevronDown,
   UserCircle,
   LogOut,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Home,
-  TrendingUp,
-  Briefcase
 } from 'lucide-react';
 import { clearManagerDetails } from '../../redux/slices/managerSlice';
 import { managerLogout } from '../../api/auth/managerAuth';
@@ -57,20 +48,9 @@ const ManagerLayout: React.FC = () => {
 
   // Navigation items for manager
   const navItems = [
-    { path: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/manager/pending-requests', label: 'Pending Approvals', icon: Clock },
-    { path: '/manager/team-requests', label: 'Team Requests', icon: Users },
-    { path: '/manager/analytics', label: 'Analytics', icon: TrendingUp },
-    { path: '/manager/settings', label: 'Settings', icon: Settings },
+    { path: '/manager/requests', label: 'All Requests', icon: FileText },
+    { path: '/manager/requests/pending', label: 'Pending Approvals', icon: Clock },
   ];
-
-  // Stats for sidebar overview
-  const stats = {
-    totalRequests: 24,
-    pendingRequests: 8,
-    approvedRequests: 14,
-    rejectedRequests: 2,
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -92,7 +72,7 @@ const ManagerLayout: React.FC = () => {
       >
         {/* Logo Section */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800">
-          <Link to="/manager/dashboard" className="flex items-center space-x-2">
+          <Link to="/manager/requests" className="flex items-center space-x-2">
             <Shield className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             {isSidebarOpen && (
               <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
@@ -129,12 +109,6 @@ const ManagerLayout: React.FC = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {manager.email || 'manager@example.com'}
               </p>
-              <div className="flex items-center mt-2 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <Briefcase className="h-3 w-3 text-blue-600 mr-1" />
-                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                  {manager.department || 'Department'}
-                </span>
-              </div>
               <span className="mt-2 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                 Role: Manager
               </span>
@@ -163,42 +137,6 @@ const ManagerLayout: React.FC = () => {
               </NavLink>
             ))}
           </div>
-
-          {/* Quick Stats Section */}
-          {isSidebarOpen && (
-            <div className="mt-8 px-4 py-4 border-t border-gray-200 dark:border-gray-800">
-              <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                Request Stats
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Total Requests</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{stats.totalRequests}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center text-gray-600 dark:text-gray-400">
-                    <Clock className="h-3 w-3 mr-1 text-yellow-500" />
-                    Pending
-                  </span>
-                  <span className="font-semibold text-yellow-600">{stats.pendingRequests}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center text-gray-600 dark:text-gray-400">
-                    <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                    Approved
-                  </span>
-                  <span className="font-semibold text-green-600">{stats.approvedRequests}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center text-gray-600 dark:text-gray-400">
-                    <AlertCircle className="h-3 w-3 mr-1 text-red-500" />
-                    Rejected
-                  </span>
-                  <span className="font-semibold text-red-600">{stats.rejectedRequests}</span>
-                </div>
-              </div>
-            </div>
-          )}
         </nav>
 
         {/* Logout Button */}
@@ -215,11 +153,11 @@ const ManagerLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <div className={`transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        {/* Top Navbar */}
+        {/* Top Navbar - Simplified */}
         <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              {/* Left side - Menu button and page title */}
+              {/* Left side - Menu button */}
               <div className="flex items-center flex-1">
                 <button
                   onClick={toggleMobileSidebar}
@@ -233,34 +171,10 @@ const ManagerLayout: React.FC = () => {
                 >
                   <Menu className="h-5 w-5" />
                 </button>
-                <div className="hidden lg:flex items-center space-x-2">
-                  <Home className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-400">/</span>
-                  <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Manager Dashboard
-                  </h1>
-                </div>
               </div>
 
-              {/* Right side - Actions */}
+              {/* Right side - Profile Dropdown */}
               <div className="flex items-center space-x-4">
-                {/* Search Bar */}
-                <div className="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-1">
-                  <Search className="h-4 w-4 text-gray-500" />
-                  <input
-                    type="text"
-                    placeholder="Search requests..."
-                    className="bg-transparent border-none outline-none px-2 py-1 text-sm w-48"
-                  />
-                </div>
-
-                {/* Notifications */}
-                <button className="relative p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                </button>
-
-                {/* Profile Dropdown */}
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}

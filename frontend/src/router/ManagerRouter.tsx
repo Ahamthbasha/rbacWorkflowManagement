@@ -5,6 +5,10 @@ import ManagerPrivateRoute from "../protecter/managerProtecter/ManagerPrivateRou
 // import ManagerLayout from "../layout/managerLayout/ManagerLayout";
 import ManagerLogin from "../pages/manager/Auth/Login";
 import ManagerRegister from "../pages/manager/Auth/Register";
+import ManagerLayout from "../layout/managerLayout/ManagerLayout";
+import ManagerRequests from "../pages/manager/Request/ManagerRequests";
+import PendingRequests from "../pages/manager/Request/PendingRequests";
+import ManagerRequestDetail from "../pages/manager/Request/ManagerRequestDetail";
 
 
 const ManagerRouter = () => {
@@ -30,7 +34,11 @@ const ManagerRouter = () => {
 
       {/* Protected routes - accessible only when logged in */}
       <Route element={<ManagerPrivateRoute />}>
-        
+        <Route element={<ManagerLayout/>}>
+        <Route path="requests" element={<ManagerRequests/>}/>
+        <Route path="requests/pending" element={<PendingRequests/>}/>
+        <Route path="requests/:requestId" element={<ManagerRequestDetail/>}/>
+        </Route>
       </Route>
     </Routes>
   );

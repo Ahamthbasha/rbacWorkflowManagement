@@ -64,9 +64,9 @@ export default function Login() {
         if (user.role === 'admin') {
           navigate('/admin/dashboard');
         } else if (user.role === 'manager') {
-          navigate('/manager/dashboard');
+          navigate('/manager/requests');
         } else {
-          navigate('/dashboard');
+          navigate('/myRequests');
         }
       }
     } catch (error: unknown) {

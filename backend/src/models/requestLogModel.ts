@@ -7,7 +7,10 @@ export enum ActionType {
   UPDATE = 'update',
   STATUS_CHANGE = 'status_change',
   CLARIFICATION_REQUESTED = 'clarification_requested',
-  CLARIFICATION_RESPONDED = 'clarification_responded'
+  CLARIFICATION_RESPONDED = 'clarification_responded',
+  EDITED = 'edited',
+  RESUBMITTED = 'resubmitted',
+  REOPENED = 'reopened'
 }
 
 interface RequestLogAttributes {
