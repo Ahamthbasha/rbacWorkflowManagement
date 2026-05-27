@@ -3,7 +3,6 @@ const managerEndpoints = {
     managerRegister: '/api/manager/register',
     managerLogin: '/api/manager/login',
     managerLogout: '/api/manager/logout',
-    managerProfile: '/api/manager/me',
     // Dashboard
   managerDashboardStats: '/api/manager/dashboard/stats',
   

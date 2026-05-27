@@ -1,5 +1,5 @@
 // pages/user/request/RequestDetail.tsx
-import { useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { 
@@ -37,7 +37,6 @@ const RequestDetail = () => {
   const [clarificationResponse, setClarificationResponse] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // ✅ Trigger state drives re-fetches — same pattern as MyRequests
   const [fetchTrigger, setFetchTrigger] = useState(0);
 
   useEffect(() => {
@@ -48,7 +47,6 @@ const RequestDetail = () => {
     const run = async () => {
       setLoading(true);
       try {
-        // ✅ Both fetches run in parallel — setState only called inside async callback
         const [requestRes, logsRes] = await Promise.all([
           getRequestById(requestId),
           getRequestLogs(requestId),
@@ -81,7 +79,7 @@ const RequestDetail = () => {
     return () => {
       abortController.abort();
     };
-  }, [requestId, fetchTrigger]); // ✅ fetchTrigger increment forces a refresh
+  }, [requestId, fetchTrigger]);
 
   const handleClarificationResponse = async () => {
     if (!clarificationResponse.trim()) {
@@ -96,7 +94,7 @@ const RequestDetail = () => {
         toast.success('Response submitted successfully');
         setShowClarificationModal(false);
         setClarificationResponse('');
-        setFetchTrigger(prev => prev + 1); // ✅ re-triggers effect to refresh data
+        setFetchTrigger(prev => prev + 1);
       } else {
         toast.error(response.message || 'Failed to submit response');
       }
@@ -166,18 +164,24 @@ const RequestDetail = () => {
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'create': return <FileText className="h-4 w-4 text-green-500" />;
+      case 'edit': return <FileText className="h-4 w-4 text-blue-500" />;
+      case 'resubmit': return <Send className="h-4 w-4 text-indigo-500" />;
       case 'status_change': return <Tag className="h-4 w-4 text-blue-500" />;
       case 'clarification_requested': return <MessageSquare className="h-4 w-4 text-purple-500" />;
       case 'clarification_responded': return <Send className="h-4 w-4 text-indigo-500" />;
+      case 'reopen': return <AlertCircle className="h-4 w-4 text-orange-500" />;
       default: return <History className="h-4 w-4 text-gray-500" />;
     }
   };
 
   const getActionLabel = (log: RequestLog) => {
     if (log.action === 'create') return 'Request Created';
+    if (log.action === 'edit') return 'Request Edited';
+    if (log.action === 'resubmit') return 'Request Resubmitted';
     if (log.action === 'status_change') return `Status Changed: ${log.oldStatus ?? 'N/A'} → ${log.newStatus}`;
     if (log.action === 'clarification_requested') return 'Clarification Requested';
     if (log.action === 'clarification_responded') return 'Clarification Response Submitted';
+    if (log.action === 'reopen') return 'Request Reopened';
     if (log.action === 'update') return 'Request Updated';
     return 'Activity';
   };
@@ -242,11 +246,21 @@ const RequestDetail = () => {
                 Respond to Clarification
               </button>
             )}
+            {request.status === 'rejected' && (
+              <button
+                onClick={() => navigate(`/editRequest/${request.id}`)}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Edit & Resubmit
+              </button>
+            )}
           </div>
         </div>
 
         {/* Request Details */}
         <div className="p-6 space-y-6">
+          {/* Description */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
               Description
@@ -256,6 +270,7 @@ const RequestDetail = () => {
             </p>
           </div>
 
+          {/* Clarification Section */}
           {request.clarificationRequest && (
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
               <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-2">
@@ -277,6 +292,7 @@ const RequestDetail = () => {
             </div>
           )}
 
+          {/* Request Info Grid - Removed separate comments section */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3 text-sm">
               <User className="h-4 w-4 text-gray-400" />
@@ -309,27 +325,16 @@ const RequestDetail = () => {
               </div>
             )}
           </div>
-
-          {request.comments && (
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Comments
-              </h4>
-              <p className="text-gray-600 dark:text-gray-400">
-                {request.comments}
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Request Logs/History */}
+      {/* Request Logs/History - Comments shown here */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
             <History className="h-5 w-5 text-gray-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Request History
+              Request History & Activity
             </h2>
           </div>
         </div>
@@ -348,20 +353,21 @@ const RequestDetail = () => {
                       {getActionIcon(log.action)}
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
-                      <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {getActionLabel(log)}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            By: {log.role} | {formatDate(log.timestamp)}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {getActionLabel(log)}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          By: {log.role} | {formatDate(log.timestamp)}
+                        </p>
+                      </div>
+                      {/* Comments are shown directly in the timeline */}
+                      {log.comments && (
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {log.comments}
                           </p>
                         </div>
-                      </div>
-                      {log.comments && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                          {log.comments}
-                        </p>
                       )}
                     </div>
                   </div>

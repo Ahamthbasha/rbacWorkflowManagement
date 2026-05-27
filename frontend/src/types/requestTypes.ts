@@ -6,6 +6,7 @@ export type RequestStatus =
   | 'rejected'
   | 'clarification_needed'
   | 'closed'
+  | 'reopened'
   | 'cancelled';
 
 export type RequestPriority = 
@@ -22,32 +23,44 @@ export type RequestCategory =
   | 'budget'
   | 'other';
 
-// Constants for enums (optional - for type safety)
-export const RequestStatusValues = {
-  SUBMITTED: 'submitted' as const,
-  PENDING: 'pending' as const,
-  APPROVED: 'approved' as const,
-  REJECTED: 'rejected' as const,
-  CLARIFICATION: 'clarification_needed' as const,
-  CLOSED: 'closed' as const,
-  CANCELLED: 'cancelled' as const,
-} as const;
+// Display types for backend computed values
+export interface StatusDisplay {
+  label: string;
+  color: string;
+  iconName: string;
+}
 
-export const RequestPriorityValues = {
-  LOW: 'low' as const,
-  MEDIUM: 'medium' as const,
-  HIGH: 'high' as const,
-  URGENT: 'urgent' as const,
-} as const;
+export interface PriorityDisplay {
+  label: string;
+  color: string;
+}
 
-export const RequestCategoryValues = {
-  ACCESS: 'access' as const,
-  SOFTWARE: 'software' as const,
-  HARDWARE: 'hardware' as const,
-  LEAVE: 'leave' as const,
-  BUDGET: 'budget' as const,
-  OTHER: 'other' as const,
-} as const;
+// Admin action buttons
+export interface AdminActionButtons {
+  canClose: boolean;
+  canReopen: boolean;
+}
+
+// Manager action buttons
+export interface ManagerActionButtons {
+  canApprove: boolean;
+  canReject: boolean;
+  canClarify: boolean;
+}
+
+// Union type for actions
+export type ActionButtons = AdminActionButtons | ManagerActionButtons;
+
+// Dashboard Stats - Match backend response structure
+export interface DashboardStats {
+  counts: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
+  recentRequests: WorkflowRequest[];
+}
 
 export interface CreateRequestData {
   title: string;
@@ -77,9 +90,12 @@ export interface RequestLog {
   changedBy: string;
   role: string;
   action: string;
+  actionLabel?: string;
+  actionIconName?: string;
   comments: string | null;
   timestamp: string;
-  changedByUser?: {        // ✅ was 'user' — now matches the association alias
+  timestampFormatted?: string;
+  changedByUser?: {
     id: string;
     name: string;
     email: string;
@@ -104,25 +120,38 @@ export interface WorkflowRequest {
   title: string;
   description: string;
   category: RequestCategory;
+  categoryLabel?: string;
   priority: RequestPriority;
+  priorityDisplay?: PriorityDisplay;
   status: RequestStatus;
+  statusDisplay?: StatusDisplay;
   userId: string;
   managerId: string | null;
   adminId: string | null;
   comments: string | null;
   clarificationRequest: string | null;
   clarificationResponse: string | null;
+  reopenReason: string | null;
+  reopenedAt: string | null;
   submittedAt: string;
-  approvedAt: string | null;
-  rejectedAt: string | null;
+  submittedAtFormatted?: string;
   createdAt: string;
+  createdAtFormatted?: string;
   updatedAt: string;
+  updatedAtFormatted?: string;
+  approvedAt: string | null;
+  approvedAtFormatted?: string | null;
+  rejectedAt: string | null;
+  rejectedAtFormatted?: string | null;
+  closedAt: string | null;
+  closedAtFormatted?: string | null;
+  reopenedAtFormatted?: string | null;
+  actions?: ActionButtons;
   user?: User;
   manager?: Manager;
   logs?: RequestLog[];
 }
 
-// Generic ApiResponse type
 export interface ApiResponse<T = Record<string, unknown>> {
   success: boolean;
   message?: string;

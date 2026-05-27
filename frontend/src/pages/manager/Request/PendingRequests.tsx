@@ -28,7 +28,10 @@ const PendingRequests = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const response = await getPendingRequests({ page, limit: 10 });
+        const response = await getPendingRequests({ 
+          page, 
+          limit: 10,
+        });
         if (!cancelled && response.success) {
           setRequests(response.data);
           setPagination(response.pagination);
@@ -48,6 +51,7 @@ const PendingRequests = () => {
   }, [page, refreshKey]);
 
   const handlePageChange = (newPage: number) => setPage(newPage);
+  
   const handleRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
@@ -80,8 +84,10 @@ const PendingRequests = () => {
         loading={loading}
         pagination={pagination}
         onPageChange={handlePageChange}
-        onRefresh={handleRefresh}
+        // No onRefresh prop - remove redundant refresh button
         showActions={true}
+        showSearch={false}
+        showFilterButton={false}
         customAction={(request: WorkflowRequest) => (
           <button
             onClick={() => navigate(`/manager/requests/${request.id}`)}

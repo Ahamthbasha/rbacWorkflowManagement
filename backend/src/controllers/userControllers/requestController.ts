@@ -357,53 +357,113 @@ export class RequestController {
       next(error);
     }
   };
-  
-  // User cancels their own request
-  cancelRequest = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { requestId } = req.params;
-      const userId = req.user?.userId;
-      const userRole = req.user?.role;
 
-      const request = await Request.findByPk(requestId);
+  // Add these methods to RequestController class
 
-      if (!request) {
-        throw new AppError('Request not found', 404);
-      }
+// User edits their own request (only if rejected or submitted)
+editRequest = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { requestId } = req.params;
+    const { title, description, category, priority } = req.body;
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
 
-      if (request.userId !== userId) {
-        throw new AppError('You are not authorized to cancel this request', 403);
-      }
+    const request = await Request.findByPk(requestId);
 
-      if (request.status !== RequestStatus.SUBMITTED && request.status !== RequestStatus.PENDING) {
-        throw new AppError('Request cannot be cancelled at this stage', 400);
-      }
-
-      const oldStatus = request.status;
-
-      request.status = 'cancelled' as RequestStatus;
-      await request.save();
-
-      await RequestLog.create({
-        requestId: request.id,
-        oldStatus,
-        newStatus: 'cancelled',
-        changedBy: userId!,
-        role: userRole || 'user',
-        action: ActionType.STATUS_CHANGE,
-        comments: 'User cancelled the request',
-        timestamp: new Date()
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Request cancelled successfully',
-        data: request
-      });
-    } catch (error) {
-      next(error);
+    if (!request) {
+      throw new AppError('Request not found', 404);
     }
-  };
+
+    // Only request owner can edit
+    if (request.userId !== userId) {
+      throw new AppError('You are not authorized to edit this request', 403);
+    }
+
+    // Only rejected or submitted requests can be edited
+    if (request.status !== RequestStatus.REJECTED && request.status !== RequestStatus.SUBMITTED) {
+      throw new AppError('Request cannot be edited at this stage', 400);
+    }
+
+    const oldStatus = request.status;
+
+    // Update request
+    request.title = title || request.title;
+    request.description = description || request.description;
+    request.category = category || request.category;
+    request.priority = priority || request.priority;
+    request.editedAt = new Date();
+    await request.save();
+
+    await RequestLog.create({
+      requestId: request.id,
+      oldStatus,
+      newStatus: request.status,
+      changedBy: userId!,
+      role: userRole || 'user',
+      action: ActionType.EDIT,
+      comments: 'Request edited by user',
+      timestamp: new Date()
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Request edited successfully',
+      data: request
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// User resubmits rejected request
+resubmitRequest = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { requestId } = req.params;
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+
+    const request = await Request.findByPk(requestId);
+
+    if (!request) {
+      throw new AppError('Request not found', 404);
+    }
+
+    // Only request owner can resubmit
+    if (request.userId !== userId) {
+      throw new AppError('You are not authorized to resubmit this request', 403);
+    }
+
+    // Only rejected requests can be resubmitted
+    if (request.status !== RequestStatus.REJECTED) {
+      throw new AppError('Only rejected requests can be resubmitted', 400);
+    }
+
+    const oldStatus = request.status;
+
+    request.status = RequestStatus.PENDING;
+    request.resubmittedAt = new Date();
+    await request.save();
+
+    await RequestLog.create({
+      requestId: request.id,
+      oldStatus,
+      newStatus: RequestStatus.PENDING,
+      changedBy: userId!,
+      role: userRole || 'user',
+      action: ActionType.RESUBMIT,
+      comments: 'Request resubmitted after rejection',
+      timestamp: new Date()
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Request resubmitted successfully',
+      data: request
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 }
 
 export default RequestController;

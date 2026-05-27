@@ -4,13 +4,12 @@ import { sequelize } from "../config/database";
 
 export enum ActionType {
   CREATE = 'create',
-  UPDATE = 'update',
+  EDIT = 'edit',
+  RESUBMIT = 'resubmit',
   STATUS_CHANGE = 'status_change',
   CLARIFICATION_REQUESTED = 'clarification_requested',
   CLARIFICATION_RESPONDED = 'clarification_responded',
-  EDITED = 'edited',
-  RESUBMITTED = 'resubmitted',
-  REOPENED = 'reopened'
+  REOPEN = 'reopen'
 }
 
 interface RequestLogAttributes {
@@ -49,10 +48,7 @@ RequestLog.init(
     requestId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'requests',
-        key: 'id',
-      },
+      references: { model: 'requests', key: 'id' },
     },
     oldStatus: {
       type: DataTypes.STRING(50),
@@ -65,10 +61,7 @@ RequestLog.init(
     changedBy: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id',
-      },
+      references: { model: 'users', key: 'id' },
     },
     role: {
       type: DataTypes.STRING(20),

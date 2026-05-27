@@ -8,6 +8,7 @@ import UserPrivateRoute from "../protecter/userProtecter/UserPrivateRoute";
 import CreateRequest from "../pages/user/request/CreateRequest";
 import MyRequests from "../pages/user/request/MyRequests";
 import RequestDetail from "../pages/user/request/RequestDetail";
+import EditRequest from "../pages/user/request/EditRequest";
 const UserRouter = () => {
   return (
     <Routes>
@@ -33,6 +34,7 @@ const UserRouter = () => {
         <Route element={<UserLayout/>}>
         <Route  path='/createRequest' element={<CreateRequest/>}/>
         <Route path="/myRequests" element={<MyRequests/>}/>
+        <Route path="/editRequest/:requestId" element={<EditRequest/>} />
         <Route path="/requests/:requestId" element={<RequestDetail/>}/>
         </Route>
         </Route>

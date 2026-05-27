@@ -1,3 +1,4 @@
+// api/action/userAction.ts
 import userRouterEndPoints from "../../endpoints/userEndpoint";
 import { API } from "../../services/axios";
 
@@ -48,5 +49,20 @@ export const respondToClarification = async (
 // Cancel a pending request
 export const cancelRequest = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
   const response = await API.delete(userRouterEndPoints.cancelRequest(requestId));
+  return response.data;
+};
+
+// Edit rejected request
+export const editRequest = async (
+  requestId: string,
+  data: Partial<CreateRequestData>
+): Promise<ApiResponse<WorkflowRequest>> => {
+  const response = await API.put(userRouterEndPoints.editRequest(requestId), data);
+  return response.data;
+};
+
+// Resubmit rejected request after editing
+export const resubmitRequest = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
+  const response = await API.put(userRouterEndPoints.resubmitRequest(requestId));
   return response.data;
 };

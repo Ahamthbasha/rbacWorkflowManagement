@@ -4,17 +4,11 @@ import managerEndpoints from "../../endpoints/managerEndpoint";
 import type {
   WorkflowRequest,
   RequestLog,
-  ApiResponse
+  ApiResponse,
+  DashboardStats
 } from "../../types/requestTypes";
-// ==================== DASHBOARD ====================
 
-export interface DashboardStats {
-  totalRequests: number;
-  pendingRequests: number;
-  approvedRequests: number;
-  rejectedRequests: number;
-  recentRequests: WorkflowRequest[];
-}
+// ==================== DASHBOARD ====================
 
 export const getDashboardStats = async (): Promise<ApiResponse<DashboardStats>> => {
   const response = await API.get(managerEndpoints.managerDashboardStats);
@@ -67,11 +61,26 @@ export const getAssignedRequests = async (params: GetRequestsParams = {}): Promi
   return response.data;
 };
 
-// Get pending requests only
-export const getPendingRequests = async (params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<WorkflowRequest>> => {
+export interface GetPendingRequestsParams {
+  page?: number;
+  limit?: number;
+  category?: string;
+  priority?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+// Get pending requests only - with filters
+export const getPendingRequests = async (params: GetPendingRequestsParams = {}): Promise<PaginatedResponse<WorkflowRequest>> => {
   const queryParams = new URLSearchParams();
   if (params.page) queryParams.append('page', params.page.toString());
   if (params.limit) queryParams.append('limit', params.limit.toString());
+  if (params.category) queryParams.append('category', params.category);
+  if (params.priority) queryParams.append('priority', params.priority);
+  if (params.search) queryParams.append('search', params.search);
+  if (params.startDate) queryParams.append('startDate', params.startDate);
+  if (params.endDate) queryParams.append('endDate', params.endDate);
   
   const url = queryParams.toString() 
     ? `${managerEndpoints.getPendingRequests}?${queryParams}`
@@ -124,4 +133,3 @@ export const requestClarification = async (requestId: string, data: Clarificatio
   const response = await API.post(managerEndpoints.requestClarification(requestId), data);
   return response.data;
 };
-
