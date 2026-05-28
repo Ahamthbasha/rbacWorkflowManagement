@@ -5,30 +5,30 @@ import User from "./userModel";
 import RequestLog from "./requestLogModel";
 
 export enum RequestStatus {
-  SUBMITTED = 'submitted',
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  CLARIFICATION = 'clarification_needed',
-  CLOSED = 'closed',
-  REOPENED = 'reopened',
-  CANCELLED = 'cancelled'
+  SUBMITTED = "submitted",
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+  CLARIFICATION = "clarification_needed",
+  CLOSED = "closed",
+  REOPENED = "reopened",
+  CANCELLED = "cancelled",
 }
 
 export enum RequestPriority {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  URGENT = 'urgent'
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  URGENT = "urgent",
 }
 
 export enum RequestCategory {
-  ACCESS = 'access',
-  SOFTWARE = 'software',
-  HARDWARE = 'hardware',
-  LEAVE = 'leave',
-  BUDGET = 'budget',
-  OTHER = 'other'
+  ACCESS = "access",
+  SOFTWARE = "software",
+  HARDWARE = "hardware",
+  LEAVE = "leave",
+  BUDGET = "budget",
+  OTHER = "other",
 }
 
 interface RequestAttributes {
@@ -56,13 +56,31 @@ interface RequestAttributes {
   updatedAt?: Date;
 }
 
-interface RequestCreationAttributes extends Optional<RequestAttributes,
-  'id' | 'status' | 'managerId' | 'adminId' | 'comments' | 'clarificationRequest' | 
-  'clarificationResponse' | 'reopenReason' | 'approvedAt' | 'rejectedAt' | 'closedAt' | 
-  'reopenedAt' | 'editedAt' | 'resubmittedAt' | 'submittedAt' | 'createdAt' | 'updatedAt'
+interface RequestCreationAttributes extends Optional<
+  RequestAttributes,
+  | "id"
+  | "status"
+  | "managerId"
+  | "adminId"
+  | "comments"
+  | "clarificationRequest"
+  | "clarificationResponse"
+  | "reopenReason"
+  | "approvedAt"
+  | "rejectedAt"
+  | "closedAt"
+  | "reopenedAt"
+  | "editedAt"
+  | "resubmittedAt"
+  | "submittedAt"
+  | "createdAt"
+  | "updatedAt"
 > {}
 
-class Request extends Model<RequestAttributes, RequestCreationAttributes> implements RequestAttributes {
+class Request
+  extends Model<RequestAttributes, RequestCreationAttributes>
+  implements RequestAttributes
+{
   public id!: string;
   public title!: string;
   public description!: string;
@@ -120,17 +138,17 @@ Request.init(
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'users', key: 'id' },
+      references: { model: "users", key: "id" },
     },
     managerId: {
       type: DataTypes.UUID,
       allowNull: true,
-      references: { model: 'users', key: 'id' },
+      references: { model: "users", key: "id" },
     },
     adminId: {
       type: DataTypes.UUID,
       allowNull: true,
-      references: { model: 'users', key: 'id' },
+      references: { model: "users", key: "id" },
     },
     comments: {
       type: DataTypes.TEXT,
@@ -188,7 +206,7 @@ Request.init(
           const user = await User.findByPk(request.userId);
           if (user && user.department) {
             const manager = await User.findOne({
-              where: { department: user.department, role: 'manager' }
+              where: { department: user.department, role: "manager" },
             });
             if (manager) {
               request.managerId = manager.id;
@@ -197,17 +215,21 @@ Request.init(
         }
       },
     },
-  }
+  },
 );
 
 // Associations
-Request.belongsTo(User, { as: 'user', foreignKey: 'userId' });
-Request.belongsTo(User, { as: 'manager', foreignKey: 'managerId' });
-Request.belongsTo(User, { as: 'admin', foreignKey: 'adminId' });
-User.hasMany(Request, { as: 'requests', foreignKey: 'userId' });
+Request.belongsTo(User, { as: "user", foreignKey: "userId" });
+Request.belongsTo(User, { as: "manager", foreignKey: "managerId" });
+Request.belongsTo(User, { as: "admin", foreignKey: "adminId" });
+User.hasMany(Request, { as: "requests", foreignKey: "userId" });
 
-Request.hasMany(RequestLog, { as: 'logs', foreignKey: 'requestId', onDelete: 'CASCADE' });
-RequestLog.belongsTo(Request, { as: 'request', foreignKey: 'requestId' });
-RequestLog.belongsTo(User, { as: 'changedByUser', foreignKey: 'changedBy' });
+Request.hasMany(RequestLog, {
+  as: "logs",
+  foreignKey: "requestId",
+  onDelete: "CASCADE",
+});
+RequestLog.belongsTo(Request, { as: "request", foreignKey: "requestId" });
+RequestLog.belongsTo(User, { as: "changedByUser", foreignKey: "changedBy" });
 
 export default Request;

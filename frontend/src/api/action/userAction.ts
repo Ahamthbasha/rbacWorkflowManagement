@@ -10,6 +10,19 @@ import type {
   ApiResponse
 } from "../../types/requestTypes";
 
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
 // Create a new request
 export const createRequest = async (data: CreateRequestData): Promise<ApiResponse<WorkflowRequest>> => {
   const response = await API.post(userRouterEndPoints.createRequest, data);
@@ -17,10 +30,16 @@ export const createRequest = async (data: CreateRequestData): Promise<ApiRespons
 };
 
 export const getUserRequests = async (
-  params?: Record<string, string>
-): Promise<ApiResponse<WorkflowRequest[]>> => {
+  params?: Record<string, string | number>
+): Promise<PaginatedResponse<WorkflowRequest>> => {
+  const queryParams: Record<string, string> = {};
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      queryParams[key] = String(value);
+    });
+  }
   const response = await API.get(userRouterEndPoints.getUserRequests, {
-    params,
+    params: queryParams,
   });
   return response.data;
 };
@@ -64,5 +83,41 @@ export const editRequest = async (
 // Resubmit rejected request after editing
 export const resubmitRequest = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
   const response = await API.put(userRouterEndPoints.resubmitRequest(requestId));
+  return response.data;
+};
+
+// ─── Update this interface in api/action/userAction.ts ───────────────────────
+
+export interface UserDashboardStats {
+  counts: {
+    total: number;
+    submitted: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    clarification: number;
+    cancelled: number;       // ← added
+  };
+  recentRequests: Array<{
+    id: string;
+    title: string;
+    categoryLabel: string;
+    statusDisplay: {
+      label: string;
+      color: string;
+      iconName: string;
+    };
+    priorityDisplay: {
+      label: string;
+      color: string;
+    };
+    manager: { name: string } | null;
+    submittedAtFormatted: string;
+  }>;
+}
+
+// The getUserDashboardStats function stays the same:
+export const getUserDashboardStats = async (): Promise<ApiResponse<UserDashboardStats>> => {
+  const response = await API.get(userRouterEndPoints.userDashboard);
   return response.data;
 };

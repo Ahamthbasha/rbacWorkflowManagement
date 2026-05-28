@@ -9,6 +9,7 @@ import CreateRequest from "../pages/user/request/CreateRequest";
 import MyRequests from "../pages/user/request/MyRequests";
 import RequestDetail from "../pages/user/request/RequestDetail";
 import EditRequest from "../pages/user/request/EditRequest";
+import UserDashboard from "../pages/user/request/UserDashboard";
 const UserRouter = () => {
   return (
     <Routes>
@@ -32,6 +33,7 @@ const UserRouter = () => {
 
         <Route element={<UserPrivateRoute/>}>
         <Route element={<UserLayout/>}>
+        <Route path="/dashboard" element={<UserDashboard/>}/>
         <Route  path='/createRequest' element={<CreateRequest/>}/>
         <Route path="/myRequests" element={<MyRequests/>}/>
         <Route path="/editRequest/:requestId" element={<EditRequest/>} />

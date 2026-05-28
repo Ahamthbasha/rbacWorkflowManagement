@@ -3,13 +3,13 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
 
 export enum ActionType {
-  CREATE = 'create',
-  EDIT = 'edit',
-  RESUBMIT = 'resubmit',
-  STATUS_CHANGE = 'status_change',
-  CLARIFICATION_REQUESTED = 'clarification_requested',
-  CLARIFICATION_RESPONDED = 'clarification_responded',
-  REOPEN = 'reopen'
+  CREATE = "create",
+  EDIT = "edit",
+  RESUBMIT = "resubmit",
+  STATUS_CHANGE = "status_change",
+  CLARIFICATION_REQUESTED = "clarification_requested",
+  CLARIFICATION_RESPONDED = "clarification_responded",
+  REOPEN = "reopen",
 }
 
 interface RequestLogAttributes {
@@ -24,9 +24,15 @@ interface RequestLogAttributes {
   timestamp: Date;
 }
 
-interface RequestLogCreationAttributes extends Optional<RequestLogAttributes, 'id' | 'timestamp'> {}
+interface RequestLogCreationAttributes extends Optional<
+  RequestLogAttributes,
+  "id" | "timestamp"
+> {}
 
-class RequestLog extends Model<RequestLogAttributes, RequestLogCreationAttributes> implements RequestLogAttributes {
+class RequestLog
+  extends Model<RequestLogAttributes, RequestLogCreationAttributes>
+  implements RequestLogAttributes
+{
   public id!: string;
   public requestId!: string;
   public oldStatus!: string | null;
@@ -48,7 +54,7 @@ RequestLog.init(
     requestId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'requests', key: 'id' },
+      references: { model: "requests", key: "id" },
     },
     oldStatus: {
       type: DataTypes.STRING(50),
@@ -61,7 +67,7 @@ RequestLog.init(
     changedBy: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: { model: 'users', key: 'id' },
+      references: { model: "users", key: "id" },
     },
     role: {
       type: DataTypes.STRING(20),
@@ -85,7 +91,7 @@ RequestLog.init(
     modelName: "RequestLog",
     tableName: "request_logs",
     timestamps: false,
-  }
+  },
 );
 
 export default RequestLog;

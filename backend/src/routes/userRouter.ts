@@ -34,6 +34,11 @@ router.post(
 router.use(authMiddleware.authenticate.bind(authMiddleware));
 router.use(authMiddleware.isUser.bind(authMiddleware));
 
+router.get(
+  '/dashboard',
+  userRequestController.getUserDashboardStats.bind(userRequestController)
+);
+
 // ==================== REQUEST MANAGEMENT ====================
 
 // Create a new request

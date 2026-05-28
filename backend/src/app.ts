@@ -1,4 +1,3 @@
-// app.ts
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -12,6 +11,7 @@ import userRouter from './routes/userRouter'
 import adminRouter from './routes/adminRouter'
 import managerRouter from './routes/managerRouter'
 import AdminAuthController from './controllers/adminControllers/adminAuthController';
+import { runMigrations } from './scripts/runMigrations';
 
 const app = express();
 const PORT = process.env.PORT;
@@ -20,7 +20,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL;
 // CORS configuration
 const corsOptions = {
     origin: FRONTEND_URL,
-    credentials: true, // Allow credentials (cookies)
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Set-Cookie', 'Cookie'],
@@ -86,8 +86,14 @@ app.listen(PORT, () => {
 (async () => {
     try {
         const sequelize = await getSequelize();
-        await sequelize.sync({ alter: process.env.NODE_ENV !== 'production' });
-        console.log('✅ Models synced with database');
+        
+        // Run migrations instead of sync
+        if (process.env.NODE_ENV !== 'production') {
+            await runMigrations();
+            console.log('✅ Migrations completed');
+        }
+        
+        console.log('✅ Database connected');
         await AdminAuthController.initializeAdmin();
     } catch (error) {
         console.error('❌ Database initialization error:', error);

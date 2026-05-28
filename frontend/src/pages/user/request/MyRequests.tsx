@@ -1,5 +1,5 @@
 // pages/user/request/MyRequests.tsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Plus } from 'lucide-react';
@@ -10,90 +10,67 @@ import { getUserRequests } from '../../../api/action/userAction';
 
 const MyRequests = () => {
   const navigate = useNavigate();
-  const isMounted = useRef(true);
   const [requests, setRequests] = useState<WorkflowRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    page: 1,
-    limit: 10,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState<FilterOptions>({});
-  const [fetchTrigger, setFetchTrigger] = useState<{
-    page: number;
-    filterParams: FilterOptions;
-  }>({ page: 1, filterParams: {} });
+
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string | number> = {
+        page,
+        limit: 10,
+      };
+      if (filters.status) params.status = filters.status;
+      if (filters.category) params.category = filters.category;
+      if (filters.priority) params.priority = filters.priority;
+      if (filters.search) params.search = filters.search;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+
+      const response = await getUserRequests(params);
+
+      if (response.success) {
+        setRequests(response.data || []);
+        setTotal(response.pagination.total);
+        setTotalPages(response.pagination.totalPages);
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      toast.error('Failed to load requests');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, filters]);
 
   useEffect(() => {
-    const { page, filterParams } = fetchTrigger;
-    const abortController = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchRequests();
+  }, [fetchRequests]);
 
-    const run = async () => {
-      setLoading(true);
-      try {
-        // ✅ Build plain object — axios serialises this as ?key=value query string
-        const params: Record<string, string> = {
-          page: page.toString(),
-          limit: '10',
-        };
-
-        if (filterParams.status)    params.status    = filterParams.status;
-        if (filterParams.category)  params.category  = filterParams.category;
-        if (filterParams.priority)  params.priority  = filterParams.priority;
-        if (filterParams.search)    params.search    = filterParams.search;
-        if (filterParams.startDate) params.startDate = filterParams.startDate;
-        if (filterParams.endDate)   params.endDate   = filterParams.endDate;
-
-        const response = await getUserRequests(params); // ✅ params forwarded to API
-
-        if (abortController.signal.aborted) return;
-
-        if (response.success) {
-          const total = response.count ?? response.data?.length ?? 0;
-          setRequests(response.data ?? []);
-          setPagination(prev => ({
-            ...prev,
-            page,
-            total,
-            totalPages: Math.ceil(total / prev.limit),
-            hasNextPage: page < Math.ceil(total / prev.limit),
-            hasPrevPage: page > 1,
-          }));
-        }
-      } catch (error) {
-        if (abortController.signal.aborted) return;
-        console.error('Error fetching requests:', error);
-        toast.error('Failed to load requests');
-      } finally {
-        if (!abortController.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void run();
-
-    return () => {
-      abortController.abort();
-      isMounted.current = false;
-    };
-  }, [fetchTrigger]);
-
-  const handlePageChange = (page: number) => {
-    setFetchTrigger({ page, filterParams: filters });
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
-    setFetchTrigger({ page: 1, filterParams: newFilters });
+    setPage(1);
   };
 
   const handleRefresh = () => {
-    // Spread into a new object reference to re-trigger the effect
-    setFetchTrigger(prev => ({ ...prev }));
+    fetchRequests();
+  };
+
+  const pagination = {
+    total,
+    page,
+    limit: 10,
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1,
   };
 
   return (
@@ -101,12 +78,8 @@ const MyRequests = () => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              My Requests
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              View and manage all your workflow requests
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Requests</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">View and manage all your workflow requests</p>
           </div>
           <button
             onClick={() => navigate('/createRequest')}

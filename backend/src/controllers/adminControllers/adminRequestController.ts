@@ -2,196 +2,28 @@
 import { Response, NextFunction } from "express";
 import { Op } from "sequelize";
 import { AuthRequest } from "../../middlewares/authMiddleware";
-import RequestModel, {
-  RequestStatus,
-  RequestPriority,
-  RequestCategory,
-} from "../../models/requestModel";
+import RequestModel, { RequestStatus } from "../../models/requestModel";
 import RequestLogModel, { ActionType } from "../../models/requestLogModel";
 import User from "../../models/userModel";
 import AppError from "../../utils/appError";
+import {
+  formatLog,
+  formatRequestBase,
+  attachLogs,
+  formatRecentRequest,
+} from "../../utils/requestFormatters";
+import DashboardService from "../../services/DashboardService";
 
 const Request = RequestModel;
 const RequestLog = RequestLogModel;
 
-// ─── Date Formatting ─────────────────────────────────────────────────────────
-
-const formatIndianDate = (date: Date | string | null): string => {
-  if (!date) return "N/A";
-  return new Date(date).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-};
-
-// ─── Status Config (badge info for frontend) ─────────────────────────────────
-
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; color: string; iconName: string }
-> = {
-  submitted: { label: "Submitted", color: "yellow", iconName: "Clock" },
-  pending: { label: "Pending", color: "blue", iconName: "Clock" },
-  approved: { label: "Approved", color: "green", iconName: "CheckCircle" },
-  rejected: { label: "Rejected", color: "red", iconName: "XCircle" },
-  clarification_needed: {
-    label: "Clarification Needed",
-    color: "purple",
-    iconName: "AlertCircle",
-  },
-  closed: { label: "Closed", color: "gray", iconName: "CheckCircle" },
-  reopened: { label: "Reopened", color: "teal", iconName: "RefreshCw" },
-  cancelled: { label: "Cancelled", color: "orange", iconName: "XCircle" },
-};
-
-// ─── Priority Config ──────────────────────────────────────────────────────────
-
-const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
-  low: { label: "Low", color: "green" },
-  medium: { label: "Medium", color: "yellow" },
-  high: { label: "High", color: "orange" },
-  urgent: { label: "Urgent", color: "red" },
-};
-
-// ─── Category Labels ──────────────────────────────────────────────────────────
-
-const CATEGORY_LABELS: Record<string, string> = {
-  access: "Access Request",
-  software: "Software Request",
-  hardware: "Hardware Request",
-  leave: "Leave Request",
-  budget: "Budget Request",
-  other: "Other",
-};
-
-// ─── Action Labels ────────────────────────────────────────────────────────────
-
-const getActionLabel = (
-  action: string,
-  oldStatus: string | null,
-  newStatus: string | null,
-): string => {
-  switch (action) {
-    case "create":
-      return "Request Created";
-    case "edit":
-      return "Request Edited";
-    case "resubmit":
-      return "Request Resubmitted";
-    case "status_change":
-      return `Status Changed: ${oldStatus ?? "N/A"} → ${newStatus ?? "N/A"}`;
-    case "clarification_requested":
-      return "Clarification Requested";
-    case "clarification_responded":
-      return "Clarification Response Submitted";
-    case "reopen":
-      return "Request Reopened";
-    default:
-      return "Activity";
-  }
-};
-
-const ACTION_ICON_MAP: Record<string, string> = {
-  create: "FileText",
-  edit: "Edit",
-  resubmit: "RefreshCw",
-  status_change: "Tag",
-  clarification_requested: "MessageSquare",
-  clarification_responded: "Send",
-  reopen: "RefreshCw",
-};
-
 // ─── Formatters ───────────────────────────────────────────────────────────────
-
-const formatLog = (log: any) => {
-  const p = log.toJSON ? log.toJSON() : log;
-  return {
-    id: p.id,
-    requestId: p.requestId,
-    oldStatus: p.oldStatus,
-    newStatus: p.newStatus,
-    role: p.role,
-    action: p.action,
-    actionLabel: getActionLabel(p.action, p.oldStatus, p.newStatus),
-    actionIconName: ACTION_ICON_MAP[p.action] ?? "History",
-    comments: p.comments,
-    timestampFormatted: formatIndianDate(p.timestamp),
-    changedByUser: p.changedByUser
-      ? {
-          id: p.changedByUser.id,
-          name: p.changedByUser.name,
-          email: p.changedByUser.email,
-          role:p.role,
-        }
-      : null,
-  };
-};
 
 const formatRequest = (request: any, includeLogs = false) => {
   const p = request.toJSON ? request.toJSON() : request;
 
-  const statusConfig = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.submitted;
-  const priorityConfig = PRIORITY_CONFIG[p.priority] ?? PRIORITY_CONFIG.medium;
-
   const result: Record<string, any> = {
-    id: p.id,
-    title: p.title,
-    description: p.description,
-
-    // Raw enums (still useful for conditional logic on frontend if ever needed)
-    category: p.category,
-    priority: p.priority,
-    status: p.status,
-
-    // ── Computed display values (frontend renders directly) ──
-    categoryLabel: CATEGORY_LABELS[p.category] ?? p.category,
-
-    statusDisplay: {
-      label: statusConfig.label,
-      color: statusConfig.color,
-      iconName: statusConfig.iconName,
-    },
-
-    priorityDisplay: {
-      label: priorityConfig.label,
-      color: priorityConfig.color,
-    },
-
-    // ── Timestamps ──
-    submittedAtFormatted: formatIndianDate(p.submittedAt),
-    createdAtFormatted: formatIndianDate(p.createdAt),
-    approvedAtFormatted: p.approvedAt ? formatIndianDate(p.approvedAt) : null,
-    rejectedAtFormatted: p.rejectedAt ? formatIndianDate(p.rejectedAt) : null,
-    closedAtFormatted: p.closedAt ? formatIndianDate(p.closedAt) : null,
-    reopenedAtFormatted: p.reopenedAt ? formatIndianDate(p.reopenedAt) : null,
-
-    // ── Content fields ──
-    comments: p.comments,
-    clarificationRequest: p.clarificationRequest,
-    clarificationResponse: p.clarificationResponse,
-    reopenReason: p.reopenReason,
-
-    // ── Relations ──
-    user: p.user
-      ? {
-          id: p.user.id,
-          name: p.user.name,
-          email: p.user.email,
-          department: p.user.department,
-        }
-      : null,
-    manager: p.manager
-      ? { id: p.manager.id, name: p.manager.name, email: p.manager.email }
-      : null,
-    admin: p.admin
-      ? { id: p.admin.id, name: p.admin.name, email: p.admin.email }
-      : null,
-
-    // ── Permission flags (backend decides, frontend just reads) ──
+    ...formatRequestBase(p),
     actions: {
       canClose: p.status === RequestStatus.APPROVED,
       canReopen:
@@ -200,16 +32,17 @@ const formatRequest = (request: any, includeLogs = false) => {
     },
   };
 
-  if (includeLogs && p.logs) {
-    result.logs = p.logs.map(formatLog);
-  }
-
+  if (includeLogs && p.logs) attachLogs(result, p.logs);
   return result;
 };
 
 // ─── Controller ───────────────────────────────────────────────────────────────
 
 export class AdminRequestController {
+  private dashboardService: DashboardService;
+  constructor(dashboardService: DashboardService) {
+    this.dashboardService = dashboardService;
+  }
   // GET /admin/requests
   getAllRequests = async (
     req: AuthRequest,
@@ -351,10 +184,9 @@ export class AdminRequestController {
 
       if (!request) throw new AppError("Request not found", 404);
 
-      res.status(200).json({
-        success: true,
-        data: formatRequest(request, true),
-      });
+      res
+        .status(200)
+        .json({ success: true, data: formatRequest(request, true) });
     } catch (error) {
       next(error);
     }
@@ -377,9 +209,8 @@ export class AdminRequestController {
 
       const request = await Request.findByPk(requestId);
       if (!request) throw new AppError("Request not found", 404);
-      if (request.status !== RequestStatus.APPROVED) {
+      if (request.status !== RequestStatus.APPROVED)
         throw new AppError("Only approved requests can be closed", 400);
-      }
 
       const oldStatus = request.status;
       request.status = RequestStatus.CLOSED;
@@ -430,12 +261,11 @@ export class AdminRequestController {
       if (
         request.status !== RequestStatus.CLOSED &&
         request.status !== RequestStatus.CANCELLED
-      ) {
+      )
         throw new AppError(
           "Only closed or cancelled requests can be reopened",
           400,
         );
-      }
 
       const oldStatus = request.status;
       request.status = RequestStatus.PENDING;
@@ -497,11 +327,9 @@ export class AdminRequestController {
         order: [["timestamp", "ASC"]],
       });
 
-      res.status(200).json({
-        success: true,
-        count: logs.length,
-        data: logs.map(formatLog),
-      });
+      res
+        .status(200)
+        .json({ success: true, count: logs.length, data: logs.map(formatLog) });
     } catch (error) {
       next(error);
     }
@@ -517,91 +345,13 @@ export class AdminRequestController {
       if (req.user?.role !== "admin")
         throw new AppError("Access denied. Admin privileges required.", 403);
 
-      const [
-        totalRequests,
-        pendingRequests,
-        approvedRequests,
-        rejectedRequests,
-        closedRequests,
-        cancelledRequests,
-        recentRequests,
-      ] = await Promise.all([
-        Request.count(),
-        Request.count({
-          where: {
-            status: {
-              [Op.in]: [
-                RequestStatus.SUBMITTED,
-                RequestStatus.PENDING,
-                RequestStatus.CLARIFICATION,
-              ],
-            },
-          },
-        }),
-        Request.count({ where: { status: RequestStatus.APPROVED } }),
-        Request.count({ where: { status: RequestStatus.REJECTED } }),
-        Request.count({ where: { status: RequestStatus.CLOSED } }),
-        Request.count({ where: { status: RequestStatus.CANCELLED } }),
-        Request.findAll({
-          limit: 5,
-          order: [["createdAt", "DESC"]],
-          attributes: [
-            "id",
-            "title",
-            "category",
-            "priority",
-            "status",
-            "submittedAt",
-          ],
-          include: [{ model: User, as: "user", attributes: ["name"] }],
-        }),
-      ]);
-
-      const formattedRecent = recentRequests.map((r: any) => {
-        const p = r.toJSON();
-        return {
-          id: p.id,
-          title: p.title,
-
-          categoryLabel: CATEGORY_LABELS[p.category] ?? p.category,
-          statusDisplay: STATUS_CONFIG[p.status] ?? STATUS_CONFIG.submitted,
-          priorityDisplay:
-            PRIORITY_CONFIG[p.priority] ?? PRIORITY_CONFIG.medium,
-
-          // Raw values kept for any future client-side filtering
-          category: p.category,
-          priority: p.priority,
-          status: p.status,
-
-          user: p.user ? { name: p.user.name } : null,
-          submittedAtFormatted: formatIndianDate(p.submittedAt),
-        };
+      const stats = await DashboardService.getDashboardStats({
+        userRole: req.user.role,
       });
-
-      // Percentage breakdowns (useful for charts / progress bars)
-      const safeTotal = totalRequests || 1;
-      const breakdown = {
-        pendingPct: +((pendingRequests / safeTotal) * 100).toFixed(1),
-        approvedPct: +((approvedRequests / safeTotal) * 100).toFixed(1),
-        rejectedPct: +((rejectedRequests / safeTotal) * 100).toFixed(1),
-        closedPct: +((closedRequests / safeTotal) * 100).toFixed(1),
-        cancelledPct: +((cancelledRequests / safeTotal) * 100).toFixed(1),
-      };
 
       res.status(200).json({
         success: true,
-        data: {
-          counts: {
-            total: totalRequests,
-            pending: pendingRequests,
-            approved: approvedRequests,
-            rejected: rejectedRequests,
-            closed: closedRequests,
-            cancelled: cancelledRequests,
-          },
-          breakdown,
-          recentRequests: formattedRecent,
-        },
+        data: stats,
       });
     } catch (error) {
       next(error);

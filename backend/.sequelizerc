@@ -1,0 +1,8 @@
+import path from "path"
+
+exports = {
+  'config': path.resolve(__dirname, 'src/config/sequelize-config.ts'),
+  'migrations-path': path.resolve(__dirname, 'src/database/migrations'),
+  'seeders-path': path.resolve(__dirname, 'src/database/seeders'),
+  'models-path': path.resolve(__dirname, 'src/models'),
+};

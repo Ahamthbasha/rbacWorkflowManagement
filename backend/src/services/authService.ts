@@ -1,8 +1,8 @@
 // services/authService.ts
-import User, { UserRole } from '../models/userModel';
-import { JwtService, IRegistrationPayload, ITokenPair } from './jwtService';
-import AppError from '../utils/appError';
-import { Op } from 'sequelize';
+import User, { UserRole } from "../models/userModel";
+import { JwtService, IRegistrationPayload, ITokenPair } from "./jwtService";
+import AppError from "../utils/appError";
+import { Op } from "sequelize";
 
 export interface IRegisterDTO {
   name: string;
@@ -39,12 +39,12 @@ export class AuthService {
   // Direct registration without OTP
   async register(data: IRegisterDTO): Promise<IAuthResponse> {
     // Check if user already exists
-    const existingUser = await User.findOne({ 
-      where: { email: data.email } 
+    const existingUser = await User.findOne({
+      where: { email: data.email },
     });
 
     if (existingUser) {
-      throw new AppError('User with this email already exists', 409);
+      throw new AppError("User with this email already exists", 409);
     }
 
     // Create user directly
@@ -52,7 +52,7 @@ export class AuthService {
       name: data.name,
       email: data.email,
       password: data.password,
-      isActive: true,  // User is active immediately
+      isActive: true, // User is active immediately
       isVerified: true, // Mark as verified since no OTP needed
       role: UserRole.USER, // Default role is USER
     });
@@ -80,22 +80,25 @@ export class AuthService {
   async login(data: ILoginDTO): Promise<IAuthResponse> {
     const user = await User.findOne({
       where: { email: data.email },
-      attributes: { include: ['password'] },
+      attributes: { include: ["password"] },
     });
 
     if (!user) {
-      throw new AppError('Invalid email or password', 401);
+      throw new AppError("Invalid email or password", 401);
     }
 
     // Check if user is active
     if (!user.isActive) {
-      throw new AppError('Your account is deactivated. Please contact admin.', 403);
+      throw new AppError(
+        "Your account is deactivated. Please contact admin.",
+        403,
+      );
     }
 
     // Verify password
     const isPasswordValid = await user.comparePassword(data.password);
     if (!isPasswordValid) {
-      throw new AppError('Invalid email or password', 401);
+      throw new AppError("Invalid email or password", 401);
     }
 
     // Generate tokens
@@ -120,20 +123,20 @@ export class AuthService {
   // Get current user
   async getCurrentUser(userId: string): Promise<User> {
     const user = await User.findByPk(userId);
-    
+
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new AppError("User not found", 404);
     }
-    
+
     return user;
   }
 
   // Refresh token
   async refreshToken(userId: string): Promise<ITokenPair> {
     const user = await User.findByPk(userId);
-    
+
     if (!user || !user.isActive) {
-      throw new AppError('User not found or inactive', 401);
+      throw new AppError("User not found or inactive", 401);
     }
 
     const tokens = this.jwtService.generateTokenPair({
@@ -146,7 +149,10 @@ export class AuthService {
   }
 
   // Search users
-  async searchUsers(query: string, excludeUserId: string): Promise<Partial<User>[]> {
+  async searchUsers(
+    query: string,
+    excludeUserId: string,
+  ): Promise<Partial<User>[]> {
     if (!query || query.length < 2) return [];
 
     const users = await User.findAll({
@@ -158,7 +164,7 @@ export class AuthService {
           { email: { [Op.like]: `%${query}%` } },
         ],
       },
-      attributes: ['id', 'name', 'email', 'role'],
+      attributes: ["id", "name", "email", "role"],
       limit: 10,
     });
 
@@ -172,7 +178,7 @@ export class AuthService {
         id: { [Op.ne]: excludeUserId },
         isActive: true,
       },
-      attributes: ['id', 'name', 'email', 'role'],
+      attributes: ["id", "name", "email", "role"],
       limit: 50,
     });
 
@@ -211,27 +217,30 @@ export class AuthService {
   async loginManager(data: ILoginDTO): Promise<IAuthResponse> {
     const user = await User.findOne({
       where: { email: data.email },
-      attributes: { include: ['password'] },
+      attributes: { include: ["password"] },
     });
 
     if (!user) {
-      throw new AppError('Invalid email or password', 401);
+      throw new AppError("Invalid email or password", 401);
     }
 
     // Check if user is a manager
     if (user.role !== UserRole.MANAGER) {
-      throw new AppError('Access denied. Manager privileges required.', 403);
+      throw new AppError("Access denied. Manager privileges required.", 403);
     }
 
     // Check if user is active
     if (!user.isActive) {
-      throw new AppError('Your account is deactivated. Please contact admin.', 403);
+      throw new AppError(
+        "Your account is deactivated. Please contact admin.",
+        403,
+      );
     }
 
     // Verify password
     const isPasswordValid = await user.comparePassword(data.password);
     if (!isPasswordValid) {
-      throw new AppError('Invalid email or password', 401);
+      throw new AppError("Invalid email or password", 401);
     }
 
     // Generate tokens
@@ -252,7 +261,6 @@ export class AuthService {
       tokens,
     };
   }
-
 }
 
 export default AuthService;
