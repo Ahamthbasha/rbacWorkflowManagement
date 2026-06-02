@@ -7,22 +7,19 @@ import path from "path";
 
 dotenv.config();
 
-// Determine if we're in production
 const isProduction = process.env.NODE_ENV === "production";
 
-// SSL Configuration for Aiven
 const getSSLConfig = () => {
   if (!isProduction) {
-    return undefined; // No SSL in development
+    return undefined;
   }
 
-  // Option 1: Using ca.pem file (recommended)
   if (process.env.DB_SSL_CA_PATH) {
     try {
       const caCert = fs.readFileSync(process.env.DB_SSL_CA_PATH, "utf-8");
       return {
         ca: caCert,
-        rejectUnauthorized: true, // Important: verify certificate
+        rejectUnauthorized: true,
       };
     } catch (error) {
       console.error("❌ Failed to read SSL certificate:", error);
@@ -30,7 +27,6 @@ const getSSLConfig = () => {
     }
   }
 
-  // Option 2: Using environment variable with certificate content
   if (process.env.DB_SSL_CA) {
     return {
       ca: process.env.DB_SSL_CA,
@@ -38,9 +34,8 @@ const getSSLConfig = () => {
     };
   }
 
-  // Option 3: Basic SSL (less secure but works for some providers)
   return {
-    rejectUnauthorized: false, // Only use if options 1 & 2 not available
+    rejectUnauthorized: false,
   };
 };
 
@@ -59,17 +54,15 @@ const sequelize = new Sequelize(
       acquire: 30000,
       idle: 10000,
     },
-    // Add SSL configuration for production
-    dialectOptions: {
+    dialectOptions: isProduction ? {
       ssl: getSSLConfig(),
-    },
+    } : {},
   },
 );
 
 let sequelizeReady = false;
 let pendingInitialization: Promise<Sequelize> | null = null;
 
-// Create database if not exists (with SSL support)
 const initDatabase = async () => {
   const connectionConfig: any = {
     host: process.env.DB_HOST,
@@ -78,7 +71,6 @@ const initDatabase = async () => {
     port: parseInt(process.env.DB_PORT || "3306"),
   };
 
-  // Add SSL for production database creation
   if (isProduction) {
     const sslConfig = getSSLConfig();
     if (sslConfig) {
@@ -87,15 +79,11 @@ const initDatabase = async () => {
   }
 
   const connection = await mysql.createConnection(connectionConfig);
-
-  await connection.execute(
-    `CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`,
-  );
+  await connection.execute(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
   await connection.end();
   console.log("✅ Database ensured");
 };
 
-// Initialize Sequelize connection
 const initializeSequelize = async (): Promise<Sequelize> => {
   if (sequelizeReady) {
     return sequelize;
@@ -123,12 +111,7 @@ const initializeSequelize = async (): Promise<Sequelize> => {
   return pendingInitialization;
 };
 
-// Start initialization
 initializeSequelize();
 
-// Export a getter function
-export const getSequelize = async (): Promise<Sequelize> =>
-  initializeSequelize();
-
-// Export the Sequelize instance for models
+export const getSequelize = async (): Promise<Sequelize> => initializeSequelize();
 export { sequelize };
