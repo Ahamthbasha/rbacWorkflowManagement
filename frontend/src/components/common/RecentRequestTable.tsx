@@ -61,7 +61,7 @@ interface RecentRequestsTableProps {
 
 const RecentRequestsTable = ({
   requests,
-  viewRoute = (id) => `/request/${id}`,
+  viewRoute = (id) => `/requests/${id}`,
 }: RecentRequestsTableProps) => {
   const navigate = useNavigate();
 
