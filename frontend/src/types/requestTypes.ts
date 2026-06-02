@@ -55,9 +55,14 @@ export type ActionButtons = AdminActionButtons | ManagerActionButtons;
 export interface DashboardStats {
   counts: {
     total: number;
+    submitted:number;
     pending: number;
     approved: number;
     rejected: number;
+    clarification:number;
+    closed:number;
+    cancelled:number;
+    reopened:number;
   };
   recentRequests: WorkflowRequest[];
 }
@@ -99,6 +104,7 @@ export interface RequestLog {
     id: string;
     name: string;
     email: string;
+    role?:string;
   };
 }
 

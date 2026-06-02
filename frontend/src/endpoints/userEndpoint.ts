@@ -1,4 +1,3 @@
-// endpoints/userEndpoint.ts
 const userRouterEndPoints = {
   userRegister: '/api/user/register',
   userLogin: '/api/user/login',
@@ -8,11 +7,9 @@ const userRouterEndPoints = {
   createRequest: '/api/user/requests',
   getUserRequests: '/api/user/requests',
   getRequestById: (requestId: string) => `/api/user/requests/${requestId}`,
-  getRequestLogs: (requestId: string) => `/api/user/requests/${requestId}/logs`,
+  editAndResubmitRequest: (requestId: string) => `/api/user/requests/${requestId}/editResubmit`,
   respondToClarification: (requestId: string) => `/api/user/requests/${requestId}/clarify`,
   cancelRequest: (requestId: string) => `/api/user/requests/${requestId}/cancel`,
-  editRequest: (requestId: string) => `/api/user/requests/${requestId}/edit`,
-  resubmitRequest: (requestId: string) => `/api/user/requests/${requestId}/resubmit`,
 };
 
 export default userRouterEndPoints;

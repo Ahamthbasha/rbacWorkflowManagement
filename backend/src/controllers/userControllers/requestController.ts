@@ -1,4 +1,3 @@
-// controllers/requestController.ts
 import { Response, NextFunction } from "express";
 import { Op } from "sequelize";
 import { AuthRequest } from "../../middlewares/authMiddleware";
@@ -14,26 +13,17 @@ import {
   formatLog,
   formatRequestBase,
   attachLogs,
-  formatRecentRequest,
 } from "../../utils/requestFormatters";
-import {
-  STATUS_CONFIG,
-  PRIORITY_CONFIG,
-  CATEGORY_LABELS,
-} from "../../utils/requestConstants";
 import DashboardService from "../../services/DashboardService";
 
 const Request = RequestModel;
 const RequestLog = RequestLogModel;
-
-// ─── Formatter ────────────────────────────────────────────────────────────────
 
 const formatRequest = (request: any, includeLogs = false) => {
   const p = request.toJSON ? request.toJSON() : request;
 
   const result: Record<string, any> = {
     ...formatRequestBase(p),
-    // Keep raw submittedAt for client-side sorting if needed
     submittedAt: p.submittedAt,
     actions: {
       canClarify: p.status === RequestStatus.CLARIFICATION,
@@ -50,13 +40,13 @@ const formatRequest = (request: any, includeLogs = false) => {
   return result;
 };
 
-// ─── Controller ───────────────────────────────────────────────────────────────
-
 export class RequestController {
   private dashboardService: DashboardService;
+
   constructor(dashboardService: DashboardService) {
     this.dashboardService = dashboardService;
   }
+
   // POST /user/requests
   createRequest = async (
     req: AuthRequest,
@@ -246,25 +236,18 @@ export class RequestController {
 
       if (!request) throw new AppError("Request not found", 404);
 
-      const isAuthorized =
-        userRole === "admin" ||
-        (userRole === "manager" &&
-          (request.userId === userId || request.managerId === userId)) ||
-        (userRole === "user" && request.userId === userId);
-
-      if (!isAuthorized)
+      if (request.userId !== userId)
         throw new AppError("You are not authorized to view this request", 403);
 
-      res
-        .status(200)
-        .json({ success: true, data: formatRequest(request, true) });
+      res.status(200).json({ success: true, data: formatRequest(request, true) });
     } catch (error) {
       next(error);
     }
   };
 
   // PATCH /user/requests/:requestId/edit
-  editRequest = async (
+  // Edits a rejected request and immediately resubmits it
+  editAndResubmitRequest = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction,
@@ -275,6 +258,8 @@ export class RequestController {
       const userId = req.user?.userId;
       const userRole = req.user?.role;
 
+      if (!userId) throw new AppError("User not authenticated", 401);
+
       const request = await Request.findByPk(requestId);
       if (!request) throw new AppError("Request not found", 404);
       if (request.userId !== userId)
@@ -282,56 +267,13 @@ export class RequestController {
       if (request.status !== RequestStatus.REJECTED)
         throw new AppError("Only rejected requests can be edited", 400);
 
+      const oldStatus = request.status;
+
       request.title = title || request.title;
       request.description = description || request.description;
       request.category = category || request.category;
       request.priority = priority || request.priority;
       request.editedAt = new Date();
-      await request.save();
-
-      await RequestLog.create({
-        requestId: request.id,
-        oldStatus: request.status,
-        newStatus: request.status,
-        changedBy: userId!,
-        role: userRole || "user",
-        action: ActionType.EDIT,
-        comments: "Request edited by user",
-        timestamp: new Date(),
-      });
-
-      res.status(200).json({
-        success: true,
-        message: "Request edited successfully",
-        data: formatRequest(request),
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // PATCH /user/requests/:requestId/resubmit
-  resubmitRequest = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    try {
-      const { requestId } = req.params;
-      const userId = req.user?.userId;
-      const userRole = req.user?.role;
-
-      const request = await Request.findByPk(requestId);
-      if (!request) throw new AppError("Request not found", 404);
-      if (request.userId !== userId)
-        throw new AppError(
-          "You are not authorized to resubmit this request",
-          403,
-        );
-      if (request.status !== RequestStatus.REJECTED)
-        throw new AppError("Only rejected requests can be resubmitted", 400);
-
-      const oldStatus = request.status;
       request.status = RequestStatus.PENDING;
       request.resubmittedAt = new Date();
       await request.save();
@@ -340,16 +282,16 @@ export class RequestController {
         requestId: request.id,
         oldStatus,
         newStatus: RequestStatus.PENDING,
-        changedBy: userId!,
+        changedBy: userId,
         role: userRole || "user",
         action: ActionType.RESUBMIT,
-        comments: "Request resubmitted after editing",
+        comments: "Request edited and resubmitted by user",
         timestamp: new Date(),
       });
 
       res.status(200).json({
         success: true,
-        message: "Request resubmitted successfully",
+        message: "Request updated and resubmitted successfully",
         data: formatRequest(request),
       });
     } catch (error) {
@@ -419,6 +361,8 @@ export class RequestController {
       const userId = req.user?.userId;
       const userRole = req.user?.role;
 
+      if (!userId) throw new AppError("User not authenticated", 401);
+
       const request = await Request.findByPk(requestId);
       if (!request) throw new AppError("Request not found", 404);
       if (request.userId !== userId)
@@ -457,52 +401,7 @@ export class RequestController {
     }
   };
 
-  // GET /user/requests/:requestId/logs
-  getRequestLogs = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    try {
-      const { requestId } = req.params;
-      const userId = req.user?.userId;
-      const userRole = req.user?.role;
-
-      const request = await Request.findByPk(requestId);
-      if (!request) throw new AppError("Request not found", 404);
-
-      const isAuthorized =
-        userRole === "admin" ||
-        (userRole === "manager" &&
-          (request.userId === userId || request.managerId === userId)) ||
-        (userRole === "user" && request.userId === userId);
-
-      if (!isAuthorized)
-        throw new AppError(
-          "You are not authorized to view logs for this request",
-          403,
-        );
-
-      const logs = await RequestLog.findAll({
-        where: { requestId },
-        include: [
-          {
-            model: User,
-            as: "changedByUser",
-            attributes: ["id", "name", "email"],
-          },
-        ],
-        order: [["timestamp", "ASC"]],
-      });
-
-      res
-        .status(200)
-        .json({ success: true, count: logs.length, data: logs.map(formatLog) });
-    } catch (error) {
-      next(error);
-    }
-  };
-
+  // GET /user/dashboard
   getUserDashboardStats = async (
     req: AuthRequest,
     res: Response,
@@ -517,10 +416,7 @@ export class RequestController {
         userRole: "user",
       });
 
-      res.status(200).json({
-        success: true,
-        data: stats,
-      });
+      res.status(200).json({ success: true, data: stats });
     } catch (error) {
       next(error);
     }

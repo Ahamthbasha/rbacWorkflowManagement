@@ -31,7 +31,7 @@ export enum RequestCategory {
   OTHER = "other",
 }
 
-interface RequestAttributes {
+export interface RequestAttributes {
   id: string;
   title: string;
   description: string;

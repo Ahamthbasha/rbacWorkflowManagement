@@ -1,6 +1,6 @@
 // services/dashboardService.ts
-import { Op } from "sequelize";
-import RequestModel, { RequestStatus } from "../models/requestModel";
+import { Op, WhereOptions } from "sequelize";
+import RequestModel, { RequestAttributes, RequestStatus } from "../models/requestModel";
 import User from "../models/userModel";
 import { formatRecentRequest } from "../utils/requestFormatters";
 
@@ -12,366 +12,128 @@ export interface DashboardStatsConfig {
   department?: string | null;
 }
 
+export interface StatusCounts {
+  total: number;
+  submitted: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  clarification: number;
+  closed: number;
+  cancelled: number;
+  reopened: number;
+}
+
 export interface DashboardStats {
-  counts: Record<string, number>;
-  breakdown?: {
-    pendingPct: number;
-    approvedPct: number;
-    rejectedPct: number;
-    closedPct?: number;
-    cancelledPct?: number;
-  };
+  counts: StatusCounts;
   recentRequests: any[];
 }
 
 export class DashboardService {
-  /**
-   * Get dashboard statistics based on user role
-   */
-  static async getDashboardStats(
-    config: DashboardStatsConfig,
-  ): Promise<DashboardStats> {
+  static async getDashboardStats(config: DashboardStatsConfig): Promise<DashboardStats> {
     const { userId, userRole, department } = config;
 
     switch (userRole) {
-      case "admin":
-        return this.getAdminStats();
-      case "manager":
-        return this.getManagerStats(department);
-      case "user":
-        return this.getUserStats(userId!);
-      default:
-        throw new Error("Invalid user role");
+      case "admin":   return this.getAdminStats();
+      case "manager": return this.getManagerStats(department);
+      case "user":    return this.getUserStats(userId!);
+      default:        throw new Error("Invalid user role");
     }
   }
 
-  /**
-   * Get stats for Admin - overview of all requests
-   */
-  private static async getAdminStats(): Promise<DashboardStats> {
+  private static async computeStats(
+    whereClause: WhereOptions<RequestAttributes>,
+    includeAssociations: object[],
+  ): Promise<DashboardStats> {
+    const count = (extra: WhereOptions<RequestAttributes> = {}): Promise<number> =>
+      Request.count({ where: { ...whereClause, ...extra } as WhereOptions<RequestAttributes> });
+
     const [
-      totalRequests,
-      pendingRequests,
-      approvedRequests,
-      rejectedRequests,
-      closedRequests,
-      cancelledRequests,
-      clarificationRequests,
-      recentRequests,
+      total,
+      submitted,
+      pending,
+      approved,
+      rejected,
+      clarification,
+      closed,
+      cancelled,
+      reopened,
+      recentRows,
     ] = await Promise.all([
-      Request.count(),
-      Request.count({
-        where: {
-          status: {
-            [Op.in]: [
-              RequestStatus.SUBMITTED,
-              RequestStatus.PENDING,
-              RequestStatus.CLARIFICATION,
-            ],
-          },
-        },
-      }),
-      Request.count({ where: { status: RequestStatus.APPROVED } }),
-      Request.count({ where: { status: RequestStatus.REJECTED } }),
-      Request.count({ where: { status: RequestStatus.CLOSED } }),
-      Request.count({ where: { status: RequestStatus.CANCELLED } }),
-      Request.count({ where: { status: RequestStatus.CLARIFICATION } }),
+      count(),
+      count({ status: RequestStatus.SUBMITTED }),
+      count({ status: RequestStatus.PENDING }),
+      count({ status: RequestStatus.APPROVED }),
+      count({ status: RequestStatus.REJECTED }),
+      count({ status: RequestStatus.CLARIFICATION }),
+      count({ status: RequestStatus.CLOSED }),
+      count({ status: RequestStatus.CANCELLED }),
+      count({ status: RequestStatus.REOPENED }),
       Request.findAll({
+        where: whereClause,
         limit: 5,
         order: [["createdAt", "DESC"]],
-        attributes: [
-          "id",
-          "title",
-          "category",
-          "priority",
-          "status",
-          "submittedAt",
-        ],
-        include: [
-          {
-            model: User,
-            as: "user",
-            attributes: ["id", "name", "email", "department"],
-          },
-        ],
+        attributes: ["id", "title", "category", "priority", "status", "submittedAt"],
+        include: includeAssociations,
       }),
     ]);
 
-    const safeTotal = totalRequests || 1;
-    const breakdown = {
-      pendingPct: +((pendingRequests / safeTotal) * 100).toFixed(1),
-      approvedPct: +((approvedRequests / safeTotal) * 100).toFixed(1),
-      rejectedPct: +((rejectedRequests / safeTotal) * 100).toFixed(1),
-      closedPct: +((closedRequests / safeTotal) * 100).toFixed(1),
-      cancelledPct: +((cancelledRequests / safeTotal) * 100).toFixed(1),
-    };
-
     return {
-      counts: {
-        total: totalRequests,
-        pending: pendingRequests,
-        approved: approvedRequests,
-        rejected: rejectedRequests,
-        closed: closedRequests,
-        cancelled: cancelledRequests,
-        clarification: clarificationRequests,
-      },
-      breakdown,
-      recentRequests: recentRequests.map(formatRecentRequest),
+      counts: { total, submitted, pending, approved, rejected, clarification, closed, cancelled, reopened },
+      recentRequests: recentRows.map(formatRecentRequest),
     };
   }
 
-  /**
-   * Get stats for Manager - requests under their department
-   */
-  private static async getManagerStats(
-    department?: string | null,
-  ): Promise<DashboardStats> {
-    // Find all users in the manager's department
+  private static async getAdminStats(): Promise<DashboardStats> {
+    return this.computeStats(
+      {},
+      [{ model: User, as: "user", attributes: ["id", "name", "email", "department"] }],
+    );
+  }
+
+  private static async getManagerStats(department?: string | null): Promise<DashboardStats> {
     const departmentUsers = await User.findAll({
-      where: {
-        department: department || undefined,
-        role: "user",
-      },
+      where: { department: department ?? undefined, role: "user" },
       attributes: ["id"],
     });
 
-    const userIds = departmentUsers.map((user) => user.id);
-
-    const whereClause =
+    const userIds = departmentUsers.map((u) => u.id);
+    const whereClause: WhereOptions<RequestAttributes> =
       userIds.length > 0 ? { userId: { [Op.in]: userIds } } : {};
 
-    const [
-      totalRequests,
-      pendingRequests,
-      approvedRequests,
-      rejectedRequests,
-      clarificationRequests,
-      recentRequests,
-    ] = await Promise.all([
-      Request.count({ where: whereClause }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: {
-            [Op.in]: [
-              RequestStatus.SUBMITTED,
-              RequestStatus.PENDING,
-              RequestStatus.CLARIFICATION,
-            ],
-          },
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.APPROVED,
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.REJECTED,
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.CLARIFICATION,
-        },
-      }),
-      Request.findAll({
-        where: whereClause,
-        limit: 5,
-        order: [["createdAt", "DESC"]],
-        attributes: [
-          "id",
-          "title",
-          "category",
-          "priority",
-          "status",
-          "submittedAt",
-        ],
-        include: [
-          {
-            model: User,
-            as: "user",
-            attributes: ["id", "name", "email", "department"],
-          },
-          {
-            model: User,
-            as: "manager",
-            attributes: ["id", "name", "email"],
-          },
-        ],
-      }),
+    return this.computeStats(whereClause, [
+      { model: User, as: "user",    attributes: ["id", "name", "email", "department"] },
+      { model: User, as: "manager", attributes: ["id", "name", "email"] },
     ]);
-
-    const safeTotal = totalRequests || 1;
-    const breakdown = {
-      pendingPct: +((pendingRequests / safeTotal) * 100).toFixed(1),
-      approvedPct: +((approvedRequests / safeTotal) * 100).toFixed(1),
-      rejectedPct: +((rejectedRequests / safeTotal) * 100).toFixed(1),
-    };
-
-    return {
-      counts: {
-        total: totalRequests,
-        pending: pendingRequests,
-        approved: approvedRequests,
-        rejected: rejectedRequests,
-        clarification: clarificationRequests,
-      },
-      breakdown,
-      recentRequests: recentRequests.map(formatRecentRequest),
-    };
   }
 
-  /**
-   * Get stats for regular User - their own requests
-   */
   private static async getUserStats(userId: string): Promise<DashboardStats> {
-    const whereClause = { userId };
-
-    const [
-      totalRequests,
-      submittedRequests,
-      pendingRequests,
-      approvedRequests,
-      rejectedRequests,
-      clarificationRequests,
-      cancelledRequests,
-      recentRequests,
-    ] = await Promise.all([
-      Request.count({ where: whereClause }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.SUBMITTED,
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: {
-            [Op.in]: [RequestStatus.PENDING, RequestStatus.CLARIFICATION],
-          },
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.APPROVED,
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.REJECTED,
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.CLARIFICATION,
-        },
-      }),
-      Request.count({
-        where: {
-          ...whereClause,
-          status: RequestStatus.CANCELLED,
-        },
-      }),
-      Request.findAll({
-        where: whereClause,
-        limit: 5,
-        order: [["createdAt", "DESC"]],
-        attributes: [
-          "id",
-          "title",
-          "category",
-          "priority",
-          "status",
-          "submittedAt",
-        ],
-        include: [
-          {
-            model: User,
-            as: "manager",
-            attributes: ["id", "name", "email"],
-          },
-        ],
-      }),
-    ]);
-
-    return {
-      counts: {
-        total: totalRequests,
-        submitted: submittedRequests,
-        pending: pendingRequests,
-        approved: approvedRequests,
-        rejected: rejectedRequests,
-        clarification: clarificationRequests,
-        cancelled: cancelledRequests,
-      },
-      recentRequests: recentRequests.map(formatRecentRequest),
-    };
+    return this.computeStats(
+      { userId } as WhereOptions<RequestAttributes>,
+      [],
+    );
   }
 
-  /**
-   * Get status distribution for charts
-   */
   static async getStatusDistribution(
     userRole: string,
     userId?: string,
     department?: string | null,
-  ): Promise<any> {
-    let whereClause = {};
+  ): Promise<StatusCounts> {
+    let whereClause: WhereOptions<RequestAttributes> = {};
 
     if (userRole === "user" && userId) {
-      whereClause = { userId };
+      whereClause = { userId } as WhereOptions<RequestAttributes>;
     } else if (userRole === "manager" && department) {
       const departmentUsers = await User.findAll({
         where: { department, role: "user" },
         attributes: ["id"],
       });
-      const userIds = departmentUsers.map((user) => user.id);
+      const userIds = departmentUsers.map((u) => u.id);
       whereClause = userIds.length > 0 ? { userId: { [Op.in]: userIds } } : {};
     }
 
-    const statusCounts = await Promise.all([
-      Request.count({
-        where: { ...whereClause, status: RequestStatus.SUBMITTED },
-      }),
-      Request.count({
-        where: { ...whereClause, status: RequestStatus.PENDING },
-      }),
-      Request.count({
-        where: { ...whereClause, status: RequestStatus.APPROVED },
-      }),
-      Request.count({
-        where: { ...whereClause, status: RequestStatus.REJECTED },
-      }),
-      Request.count({
-        where: { ...whereClause, status: RequestStatus.CLOSED },
-      }),
-      Request.count({
-        where: { ...whereClause, status: RequestStatus.CANCELLED },
-      }),
-      Request.count({
-        where: { ...whereClause, status: RequestStatus.CLARIFICATION },
-      }),
-    ]);
-
-    return {
-      submitted: statusCounts[0],
-      pending: statusCounts[1],
-      approved: statusCounts[2],
-      rejected: statusCounts[3],
-      closed: statusCounts[4],
-      cancelled: statusCounts[5],
-      clarification: statusCounts[6],
-    };
+    const stats = await this.computeStats(whereClause, []);
+    return stats.counts;
   }
 }
 

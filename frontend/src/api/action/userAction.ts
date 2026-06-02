@@ -1,13 +1,10 @@
-// api/action/userAction.ts
 import userRouterEndPoints from "../../endpoints/userEndpoint";
 import { API } from "../../services/axios";
-
 import type {
   CreateRequestData,
   ClarificationResponseData,
   WorkflowRequest,
-  RequestLog,
-  ApiResponse
+  ApiResponse,
 } from "../../types/requestTypes";
 
 export interface PaginatedResponse<T> {
@@ -23,8 +20,9 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// Create a new request
-export const createRequest = async (data: CreateRequestData): Promise<ApiResponse<WorkflowRequest>> => {
+export const createRequest = async (
+  data: CreateRequestData
+): Promise<ApiResponse<WorkflowRequest>> => {
   const response = await API.post(userRouterEndPoints.createRequest, data);
   return response.data;
 };
@@ -44,49 +42,36 @@ export const getUserRequests = async (
   return response.data;
 };
 
-// Get a specific request by ID
-export const getRequestById = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
+export const getRequestById = async (
+  requestId: string
+): Promise<ApiResponse<WorkflowRequest>> => {
   const response = await API.get(userRouterEndPoints.getRequestById(requestId));
   return response.data;
 };
 
-// Get request logs/history by REQUEST ID
-export const getRequestLogs = async (requestId: string): Promise<ApiResponse<RequestLog[]>> => {
-  const response = await API.get(userRouterEndPoints.getRequestLogs(requestId));
+// Edit rejected request fields AND resubmit in one call
+export const editAndResubmitRequest = async (
+  requestId: string,
+  data: Partial<CreateRequestData>
+): Promise<ApiResponse<WorkflowRequest>> => {
+  const response = await API.put(
+    userRouterEndPoints.editAndResubmitRequest(requestId),
+    data
+  );
   return response.data;
 };
 
-// Respond to clarification request from manager
 export const respondToClarification = async (
   requestId: string,
   data: ClarificationResponseData
 ): Promise<ApiResponse<WorkflowRequest>> => {
-  const response = await API.put(userRouterEndPoints.respondToClarification(requestId), data);
+  const response = await API.put(
+    userRouterEndPoints.respondToClarification(requestId),
+    data
+  );
   return response.data;
 };
 
-// Cancel a pending request
-export const cancelRequest = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
-  const response = await API.delete(userRouterEndPoints.cancelRequest(requestId));
-  return response.data;
-};
-
-// Edit rejected request
-export const editRequest = async (
-  requestId: string,
-  data: Partial<CreateRequestData>
-): Promise<ApiResponse<WorkflowRequest>> => {
-  const response = await API.put(userRouterEndPoints.editRequest(requestId), data);
-  return response.data;
-};
-
-// Resubmit rejected request after editing
-export const resubmitRequest = async (requestId: string): Promise<ApiResponse<WorkflowRequest>> => {
-  const response = await API.put(userRouterEndPoints.resubmitRequest(requestId));
-  return response.data;
-};
-
-// ─── Update this interface in api/action/userAction.ts ───────────────────────
 
 export interface UserDashboardStats {
   counts: {
@@ -96,27 +81,24 @@ export interface UserDashboardStats {
     approved: number;
     rejected: number;
     clarification: number;
-    cancelled: number;       // ← added
+    closed: number;
+    cancelled: number;
+    reopened: number;
   };
   recentRequests: Array<{
     id: string;
     title: string;
+    category: string;
+    priority: string;
+    status: string;
     categoryLabel: string;
-    statusDisplay: {
-      label: string;
-      color: string;
-      iconName: string;
-    };
-    priorityDisplay: {
-      label: string;
-      color: string;
-    };
-    manager: { name: string } | null;
+    statusDisplay: { label: string; color: string; iconName: string };
+    priorityDisplay: { label: string; color: string };
     submittedAtFormatted: string;
   }>;
 }
 
-// The getUserDashboardStats function stays the same:
+// ✅ fixed
 export const getUserDashboardStats = async (): Promise<ApiResponse<UserDashboardStats>> => {
   const response = await API.get(userRouterEndPoints.userDashboard);
   return response.data;

@@ -61,24 +61,12 @@ router.get(
   userRequestController.getRequestById.bind(userRequestController)
 );
 
-// Get request logs/history by REQUEST ID
-router.get(
-  '/requests/:requestId/logs',
-  userRequestController.getRequestLogs.bind(userRequestController)
-);
-
 // ==================== EDIT & RESUBMIT (Only for rejected requests) ====================
 
 // Edit rejected request
 router.put(
-  '/requests/:requestId/edit',
-  userRequestController.editRequest.bind(userRequestController)
-);
-
-// Resubmit rejected request after editing
-router.put(
-  '/requests/:requestId/resubmit',
-  userRequestController.resubmitRequest.bind(userRequestController)
+  '/requests/:requestId/editResubmit',
+  userRequestController.editAndResubmitRequest.bind(userRequestController)
 );
 
 // ==================== CLARIFICATION RESPONSES ====================
