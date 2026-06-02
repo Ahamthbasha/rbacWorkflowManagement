@@ -16,8 +16,3 @@ export const logout = async () => {
   const response = await API.post(userRouterEndPoints.userLogout, {});
   return response.data;
 };
-
-export const getCurrentUser = async () => {
-  const response = await API.get(userRouterEndPoints.userProfile);
-  return response.data; 
-};

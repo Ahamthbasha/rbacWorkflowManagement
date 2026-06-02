@@ -105,18 +105,11 @@ export const managerLogout = async (): Promise<{ success: boolean; message: stri
   return response.data;
 };
 
-// Get Current Manager Profile
-export const getCurrentManager = async (): Promise<ManagerProfileResponse> => {
-  const response = await API.get(managerEndpoints.managerProfile);
-  return response.data;
-};
-
 // Export all functions as a grouped object
 const managerAuth = {
   login: managerLogin,
   register: managerRegister,
   logout: managerLogout,
-  getProfile: getCurrentManager,
 };
 
 export default managerAuth;
