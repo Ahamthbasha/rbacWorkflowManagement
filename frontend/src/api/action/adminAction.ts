@@ -4,7 +4,8 @@ import adminEndpoints from "../../endpoints/adminEndpoints";
 import type {
   WorkflowRequest,
   RequestLog,
-  ApiResponse
+  ApiResponse,
+  DashboardStats,
 } from "../../types/requestTypes";
 
 export interface AdminProfileResponse {
@@ -17,24 +18,9 @@ export interface AdminProfileResponse {
   };
 }
 
-// Get Current Admin Profile
-export const getCurrentAdmin = async (): Promise<AdminProfileResponse> => {
-  const response = await API.get(adminEndpoints.adminProfile);
-  return response.data;
-};
-
 // ==================== DASHBOARD ====================
 
-export interface DashboardStats {
-  totalRequests: number;
-  pendingRequests: number;
-  approvedRequests: number;
-  rejectedRequests: number;
-  closedRequests: number;
-  cancelledRequests: number;
-  recentRequests: WorkflowRequest[];
-}
-
+// DashboardStats is now imported from requestTypes.ts (counts + recentRequests shape)
 export const getDashboardStats = async (): Promise<ApiResponse<DashboardStats>> => {
   const response = await API.get(adminEndpoints.adminDashboardStats);
   return response.data;
@@ -77,11 +63,11 @@ export const getAllRequests = async (params: GetRequestsParams = {}): Promise<Pa
   if (params.search) queryParams.append('search', params.search);
   if (params.startDate) queryParams.append('startDate', params.startDate);
   if (params.endDate) queryParams.append('endDate', params.endDate);
-  
-  const url = queryParams.toString() 
+
+  const url = queryParams.toString()
     ? `${adminEndpoints.getAllRequests}?${queryParams}`
     : adminEndpoints.getAllRequests;
-  
+
   const response = await API.get(url);
   return response.data;
 };

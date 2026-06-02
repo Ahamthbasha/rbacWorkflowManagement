@@ -1,325 +1,436 @@
 // pages/LandingPage.tsx
-import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { 
-  Shield, 
-  FileText, 
-  Users, 
-  Clock, 
-  CheckCircle, 
+import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import {
   ArrowRight,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  LayoutDashboard,
   Lock,
-  BarChart3,
-  TrendingUp,
+  MessageSquareMore,
+  ShieldCheck,
   Sparkles,
-  ChevronRight,
-  Star,
-} from 'lucide-react';
-import type { RootState } from '../../../redux/store';
-import Header from '../../../layout/commonLayout/Header';
-import Footer from '../../../layout/commonLayout/Footer';
+  Users,
+} from "lucide-react";
+import type { RootState } from "../../../redux/store";
+import Header from "../../../layout/commonLayout/Header";
+import Footer from "../../../layout/commonLayout/Footer";
 
 const LandingPage = () => {
   const user = useSelector((state: RootState) => state.user);
+
   const isLoggedIn = !!user.userId;
+  const role = user.role || "guest";
+  const userName = user.name?.split(" ")[0] || "there";
 
-  const features = [
+  const heroTitle = isLoggedIn
+    ? `Welcome back, ${userName}`
+    : "Keep every request moving without losing control";
+
+  const heroDescription = isLoggedIn
+    ? "Track requests, review approvals, and jump back into your workflow from one place."
+    : "A clean role-based workflow system for submitting requests, reviewing approvals, and closing tasks with full visibility.";
+
+  const primaryCta = isLoggedIn
+    ? {
+        to: "/dashboard",
+        label: "Open dashboard",
+        icon: LayoutDashboard,
+      }
+    : {
+        to: "/register",
+        label: "Get started",
+        icon: ArrowRight,
+      };
+
+  const secondaryCta = isLoggedIn
+    ? {
+        to:
+          role === "admin"
+            ? "/admin/requests"
+            : role === "manager"
+            ? "/manager/requests"
+            : "/myRequests",
+        label:
+          role === "admin"
+            ? "Review requests"
+            : role === "manager"
+            ? "Manage approvals"
+            : "View my requests",
+      }
+    : {
+        to: "/login",
+        label: "Sign in",
+      };
+
+  const quickActions = isLoggedIn
+    ? role === "admin"
+      ? [
+          {
+            title: "Pending closures",
+            desc: "Close approved requests and keep the queue clean.",
+            to: "/admin/requests",
+            icon: CheckCircle2,
+          },
+          {
+            title: "Reopened items",
+            desc: "Review reopened requests that need another pass.",
+            to: "/admin/requests",
+            icon: Clock3,
+          },
+          {
+            title: "System overview",
+            desc: "Watch workload, request states, and team activity.",
+            to: "/dashboard",
+            icon: ShieldCheck,
+          },
+        ]
+      : role === "manager"
+      ? [
+          {
+            title: "Review requests",
+            desc: "Approve, reject, or request clarification quickly.",
+            to: "/manager/requests",
+            icon: MessageSquareMore,
+          },
+          {
+            title: "Team activity",
+            desc: "See who submitted what and where things are blocked.",
+            to: "/dashboard",
+            icon: Users,
+          },
+          {
+            title: "Approval queue",
+            desc: "Keep decision-making fast and visible.",
+            to: "/manager/requests",
+            icon: CheckCircle2,
+          },
+        ]
+      : [
+          {
+            title: "Create request",
+            desc: "Start a new workflow request in a few clicks.",
+            to: "/createRequest",
+            icon: FileText,
+          },
+          {
+            title: "Track progress",
+            desc: "Follow your requests from submission to closure.",
+            to: "/myRequests",
+            icon: Clock3,
+          },
+          {
+            title: "Check updates",
+            desc: "See clarification requests and approval outcomes fast.",
+            to: "/dashboard",
+            icon: MessageSquareMore,
+          },
+        ]
+    : [
+        {
+          title: "Submit requests",
+          desc: "Users create requests with priority and full details.",
+          to: "/register",
+          icon: FileText,
+        },
+        {
+          title: "Manager review",
+          desc: "Managers approve, reject, or request clarification.",
+          to: "/manager/register",
+          icon: Users,
+        },
+        {
+          title: "Admin closure",
+          desc: "Admins finalize approved workflows with control.",
+          to: "/admin/login",
+          icon: ShieldCheck,
+        },
+      ];
+
+  const liveWorkflow = [
     {
-      icon: Shield,
-      title: 'Role-Based Access Control',
-      description: 'Granular access control with User, Manager, and Admin roles. Each role has specific permissions and access levels.',
-      color: 'from-blue-500 to-blue-600',
+      label: "Submitted",
+      value: "New request created",
+      tone:
+        "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900",
     },
     {
+      label: "In review",
+      value: "Waiting for manager action",
+      tone:
+        "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900",
+    },
+    {
+      label: "Clarification",
+      value: "User response requested",
+      tone:
+        "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900",
+    },
+    {
+      label: "Closed",
+      value: "Workflow completed",
+      tone:
+        "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900",
+    },
+  ];
+
+  const featureBlocks = [
+    {
+      title: "Role-aware access",
+      description:
+        "Users, managers, and admins each get focused actions without clutter.",
+      icon: ShieldCheck,
+    },
+    {
+      title: "Request visibility",
+      description:
+        "Every request stays traceable with status updates, comments, and activity history.",
       icon: FileText,
-      title: 'Workflow Management',
-      description: 'Create, track, and manage workflow requests with real-time status updates and notifications.',
-      color: 'from-purple-500 to-purple-600',
     },
     {
-      icon: Clock,
-      title: 'Approval Process',
-      description: 'Streamlined approval workflow with manager review, admin closure, and automatic notifications.',
-      color: 'from-green-500 to-green-600',
+      title: "Faster decisions",
+      description:
+        "Clarifications, approvals, rejections, and closures happen in one clear flow.",
+      icon: CheckCircle2,
     },
     {
-      icon: Users,
-      title: 'Team Collaboration',
-      description: 'Seamless collaboration between users, managers, and administrators with transparent communication.',
-      color: 'from-orange-500 to-orange-600',
-    },
-    {
-      icon: BarChart3,
-      title: 'Analytics & Reports',
-      description: 'Comprehensive analytics and reports to track request trends, approval rates, and performance metrics.',
-      color: 'from-red-500 to-red-600',
-    },
-    {
+      title: "Secure by default",
+      description:
+        "Authentication and authorization stay built into the workflow, not bolted on later.",
       icon: Lock,
-      title: 'Secure Authentication',
-      description: 'JWT-based authentication with secure cookies, token refresh, and role-based authorization.',
-      color: 'from-indigo-500 to-indigo-600',
     },
-  ];
-
-  const workflowSteps = [
-    {
-      step: '1',
-      title: 'Submit Request',
-      description: 'User creates a new workflow request with details and priority level',
-      icon: FileText,
-    },
-    {
-      step: '2',
-      title: 'Manager Review',
-      description: 'Manager reviews, approves, rejects, or requests clarification',
-      icon: Users,
-    },
-    {
-      step: '3',
-      title: 'Admin Closure',
-      description: 'Admin closes approved requests or reopens if needed',
-      icon: CheckCircle,
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'IT Manager',
-      content: 'This system has transformed how we handle internal requests. The role-based access is perfect for our organization.',
-      rating: 5,
-    },
-    {
-      name: 'Michael Chen',
-      role: 'System Administrator',
-      content: 'The workflow automation saves us hours every week. Highly recommended for any organization!',
-      rating: 5,
-    },
-    {
-      name: 'Emily Rodriguez',
-      role: 'Operations Director',
-      content: 'Excellent platform for managing approvals and tracking requests. The interface is intuitive and efficient.',
-      rating: 5,
-    },
-  ];
-
-  const stats = [
-    { value: '99.9%', label: 'Uptime', icon: TrendingUp },
-    { value: '10K+', label: 'Requests Processed', icon: CheckCircle },
-    { value: '500+', label: 'Happy Users', icon: Users },
-    { value: '24/7', label: 'Support', icon: Clock },
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
-      {/* Header */}
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-          <div className="text-center">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium mb-6">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Introducing RBA Workflow 2.0
+      <main>
+        <section className="relative overflow-hidden border-b border-gray-200 dark:border-gray-800">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.10),transparent_30%),radial-gradient(circle_at_left,rgba(139,92,246,0.10),transparent_28%)]" />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 px-3 py-1.5 text-sm text-blue-700 dark:text-blue-300 mb-6">
+                  <Sparkles className="h-4 w-4" />
+                  {isLoggedIn
+                    ? `Signed in as ${role}`
+                    : "Role-based workflow platform"}
+                </div>
+
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+                  {heroTitle}
+                </h1>
+
+                <p className="mt-5 text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl">
+                  {heroDescription}
+                </p>
+
+                <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                  <Link
+                    to={primaryCta.to}
+                    className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-base font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm"
+                  >
+                    <primaryCta.icon className="h-5 w-5 mr-2" />
+                    {primaryCta.label}
+                  </Link>
+
+                  <Link
+                    to={secondaryCta.to}
+                    className="inline-flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-700 px-6 py-3 text-base font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                  >
+                    {secondaryCta.label}
+                  </Link>
+                </div>
+
+                <div className="mt-8 flex flex-wrap gap-3 text-sm">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-900 px-3 py-1.5 text-gray-600 dark:text-gray-300">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    Clear approval flow
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-900 px-3 py-1.5 text-gray-600 dark:text-gray-300">
+                    <ShieldCheck className="h-4 w-4 text-blue-500" />
+                    Role-based access
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 dark:bg-gray-900 px-3 py-1.5 text-gray-600 dark:text-gray-300">
+                    <Clock3 className="h-4 w-4 text-amber-500" />
+                    Faster turnaround
+                  </span>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="rounded-3xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 shadow-xl p-5 backdrop-blur">
+                  <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-800">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Workflow overview
+                      </p>
+                      <h3 className="text-xl font-semibold mt-1">
+                        Live request states
+                      </h3>
+                    </div>
+                    <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 p-3">
+                      <LayoutDashboard className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {liveWorkflow.map((item) => (
+                      <div
+                        key={item.label}
+                        className={`rounded-2xl border px-4 py-4 ${item.tone}`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                              {item.label}
+                            </p>
+                            <p className="text-sm mt-1">{item.value}</p>
+                          </div>
+                          <CheckCircle2 className="h-5 w-5 opacity-80" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-gray-50 dark:bg-gray-800 p-4">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Visibility
+                      </p>
+                      <p className="text-lg font-semibold mt-1">End-to-end</p>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 dark:bg-gray-800 p-4">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Access model
+                      </p>
+                      <p className="text-lg font-semibold mt-1">RBAC</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6">
-              Intelligent{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Workflow Management
-              </span>
-              <br />
-              with RBAC
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-3xl mx-auto">
-              Streamline your business processes with our powerful role-based access control system. 
-              Manage requests, approvals, and workflows seamlessly.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {isLoggedIn ? (
+          </div>
+        </section>
+
+        <section className="py-16 lg:py-20 bg-gray-50 dark:bg-gray-900/40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
+              <div>
+                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">
+                  Quick actions
+                </p>
+                <h2 className="text-3xl font-bold">
+                  {isLoggedIn
+                    ? "Continue where you left off"
+                    : "See how the product works"}
+                </h2>
+              </div>
+              {!isLoggedIn && (
                 <Link
-                  to="/dashboard"
-                  className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                  to="/register"
+                  className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  Create account
                 </Link>
-              ) : (
-                <>
-                  <Link
-                    to="/register"
-                    className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-                  >
-                    Get Started Free
-                    <ChevronRight className="ml-2 h-5 w-5" />
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
-                  >
-                    Sign In
-                  </Link>
-                </>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {quickActions.map((item) => (
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  className="group rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 p-6 hover:border-blue-300 dark:hover:border-blue-800 hover:shadow-md transition-all"
+                >
+                  <div className="inline-flex rounded-xl bg-blue-50 dark:bg-blue-950/30 p-3 mb-4">
+                    <item.icon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                  </div>
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    {item.desc}
+                  </p>
+                  <div className="mt-4 inline-flex items-center text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    Open
+                    <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 lg:py-20 bg-white dark:bg-gray-950">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-10">
+              <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">
+                Core strengths
+              </p>
+              <h2 className="text-3xl font-bold">
+                Built for real approval workflows
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {featureBlocks.map((feature) => (
+                <div
+                  key={feature.title}
+                  className="rounded-2xl border border-gray-200 dark:border-gray-800 p-6 bg-gray-50/70 dark:bg-gray-900/50"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 p-3">
+                      <feature.icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">{feature.title}</h3>
+                      <p className="mt-2 text-gray-600 dark:text-gray-400">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 lg:py-20 bg-blue-600">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl lg:text-4xl font-bold text-white">
+              {isLoggedIn
+                ? "Your workspace is ready"
+                : "Start with a workflow that stays accountable"}
+            </h2>
+            <p className="mt-4 text-lg text-blue-100 max-w-2xl mx-auto">
+              {isLoggedIn
+                ? "Jump back in and keep requests moving with less friction and better visibility."
+                : "Create requests, review approvals, and close the loop with a system designed for teams."}
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to={primaryCta.to}
+                className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                {primaryCta.label}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+
+              {!isLoggedIn && (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center rounded-xl border border-white/70 px-6 py-3 text-base font-semibold text-white hover:bg-white/10 transition-colors"
+                >
+                  Sign in
+                </Link>
               )}
             </div>
           </div>
+        </section>
+      </main>
 
-          {/* Stats Section */}
-          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-24 bg-white dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Powerful Features for Modern Workflows
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-              Everything you need to manage, track, and optimize your business processes
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-8 border border-gray-100 dark:border-gray-700 hover:scale-105"
-              >
-                <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${feature.color} mb-4`}>
-                  <feature.icon className="h-6 w-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Workflow Section */}
-      <section className="py-24 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Simple, Transparent Workflow
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              From submission to completion - track every step of the way
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {workflowSteps.map((step) => (
-              <div key={step.step} className="text-center relative">
-                <div className="relative z-10">
-                  <div className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                    <step.icon className="h-8 w-8 text-white" />
-                  </div>
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -mt-2 w-8 h-8 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center font-bold text-blue-600">
-                    {step.step}
-                  </div>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  {step.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {step.description}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-16 flex justify-center">
-            <Link
-              to="/register"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
-            >
-              Start Your First Workflow
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-24 bg-white dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              What Our Users Say
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
-              Trusted by organizations worldwide
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial) => (
-              <div
-                key={testimonial.name}
-                className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700"
-              >
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  "{testimonial.content}"
-                </p>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">{testimonial.name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{testimonial.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-            Ready to Streamline Your Workflows?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of organizations using RBA Workflow to manage their processes
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/register"
-              className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-blue-600 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200"
-            >
-              Get Started Now
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-            <Link
-              to="/contact"
-              className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-white border-2 border-white rounded-xl hover:bg-white hover:text-blue-600 transition-all duration-200"
-            >
-              Contact Sales
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
       <Footer />
     </div>
   );

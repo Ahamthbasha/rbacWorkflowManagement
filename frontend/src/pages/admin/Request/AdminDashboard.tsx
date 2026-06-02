@@ -1,168 +1,178 @@
 // pages/admin/Request/AdminDashboard.tsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import { toast } from 'react-toastify';
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
-  Eye
+  Ban,
+  RotateCcw,
+  Archive,
 } from 'lucide-react';
 import { getDashboardStats } from '../../../api/action/adminAction';
-import type { WorkflowRequest } from '../../../types/requestTypes';
+import StatCard from '../../../components/common/Statscard';
+import RecentRequestsTable, { type RecentRequest } from '../../../components/common/RecentRequestTable';
+import type { DashboardStats } from '../../../types/requestTypes';
 
-interface DashboardData {
-  totalRequests: number;
-  pendingRequests: number;
-  approvedRequests: number;
-  rejectedRequests: number;
-  closedRequests: number;
-  cancelledRequests: number;
-  recentRequests: WorkflowRequest[];
-}
+// ── loader ───────────────────────────────────────────────────────────────────
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-96">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+  </div>
+);
 
+// ── component ────────────────────────────────────────────────────────────────
 const AdminDashboard = () => {
-  const [dashboardData, setDashboardData] = useState<DashboardData>({
-    totalRequests: 0,
-    pendingRequests: 0,
-    approvedRequests: 0,
-    rejectedRequests: 0,
-    closedRequests: 0,
-    cancelledRequests: 0,
-    recentRequests: []
-  });
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    const fetchDashboardData = async () => {
+    const loadDashboard = async () => {
+      setLoading(true);
       try {
         const response = await getDashboardStats();
-        
         if (cancelled) return;
-
         if (response.success && response.data) {
-          setDashboardData({
-            totalRequests: response.data.totalRequests,
-            pendingRequests: response.data.pendingRequests,
-            approvedRequests: response.data.approvedRequests,
-            rejectedRequests: response.data.rejectedRequests,
-            closedRequests: response.data.closedRequests,
-            cancelledRequests: response.data.cancelledRequests,
-            recentRequests: response.data.recentRequests || []
-          });
+          setDashboardData(response.data);
+        } else {
+          toast.error(response.message || 'Failed to load dashboard data');
         }
       } catch (error) {
         if (!cancelled) {
-          console.error('Error fetching dashboard data:', error);
+          const message = error instanceof Error ? error.message : 'Failed to load dashboard data';
+          toast.error(message);
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
-    fetchDashboardData();
-
-    return () => {
-      cancelled = true;
-    };
+    loadDashboard();
+    return () => { cancelled = true; };
   }, []);
 
-  const statCards = [
-    { title: 'Total Requests', value: dashboardData.totalRequests, icon: FileText, color: 'bg-blue-500' },
-    { title: 'Pending', value: dashboardData.pendingRequests, icon: Clock, color: 'bg-yellow-500' },
-    { title: 'Approved', value: dashboardData.approvedRequests, icon: CheckCircle, color: 'bg-green-500' },
-    { title: 'Rejected', value: dashboardData.rejectedRequests, icon: XCircle, color: 'bg-red-500' },
-    { title: 'Closed', value: dashboardData.closedRequests, icon: CheckCircle, color: 'bg-gray-500' },
-    { title: 'Cancelled', value: dashboardData.cancelledRequests, icon: AlertCircle, color: 'bg-orange-500' },
-  ];
+  if (loading) return <LoadingSpinner />;
 
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { color: string; label: string }> = {
-      submitted: { color: 'bg-yellow-100 text-yellow-800', label: 'Submitted' },
-      pending: { color: 'bg-blue-100 text-blue-800', label: 'Pending' },
-      approved: { color: 'bg-green-100 text-green-800', label: 'Approved' },
-      rejected: { color: 'bg-red-100 text-red-800', label: 'Rejected' },
-      clarification_needed: { color: 'bg-purple-100 text-purple-800', label: 'Clarification Needed' },
-      closed: { color: 'bg-gray-100 text-gray-800', label: 'Closed' },
-      reopened: { color: 'bg-orange-100 text-orange-800', label: 'Reopened' },
-      cancelled: { color: 'bg-orange-100 text-orange-800', label: 'Cancelled' }
-    };
-    const { color, label } = config[status] || config.submitted;
-    return <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>{label}</span>;
-  };
-
-  if (loading) {
+  if (!dashboardData) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400">No dashboard data available</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
+  const { counts, recentRequests } = dashboardData;
+
+  const tableRequests: RecentRequest[] = recentRequests.map((r) => ({
+    ...r,
+    categoryLabel: r.categoryLabel ?? '',
+    submittedAtFormatted: r.submittedAtFormatted ?? new Date(r.submittedAt).toLocaleString(),
+    statusDisplay: r.statusDisplay ?? { label: r.status, color: 'gray', iconName: 'FileText' },
+    priorityDisplay: r.priorityDisplay ?? { label: r.priority, color: 'gray' },
+  }));
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Admin Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400">System-wide overview of all service requests</p>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+        <StatCard
+          label="Total"
+          value={counts.total}
+          icon={FileText}
+          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+          iconColor="text-blue-600 dark:text-blue-400"
+        />
+        <StatCard
+          label="Submitted"
+          value={counts.submitted}
+          icon={FileText}
+          iconBgColor="bg-indigo-100 dark:bg-indigo-900/30"
+          iconColor="text-indigo-600 dark:text-indigo-400"
+        />
+        <StatCard
+          label="Pending"
+          value={counts.pending}
+          icon={Clock}
+          iconBgColor="bg-yellow-100 dark:bg-yellow-900/30"
+          iconColor="text-yellow-600 dark:text-yellow-400"
+        />
+        <StatCard
+          label="Approved"
+          value={counts.approved}
+          icon={CheckCircle}
+          iconBgColor="bg-green-100 dark:bg-green-900/30"
+          iconColor="text-green-600 dark:text-green-400"
+        />
+        <StatCard
+          label="Rejected"
+          value={counts.rejected}
+          icon={XCircle}
+          iconBgColor="bg-red-100 dark:bg-red-900/30"
+          iconColor="text-red-600 dark:text-red-400"
+        />
+        <StatCard
+          label="Clarification"
+          value={counts.clarification}
+          icon={AlertCircle}
+          iconBgColor="bg-purple-100 dark:bg-purple-900/30"
+          iconColor="text-purple-600 dark:text-purple-400"
+        />
+        <StatCard
+          label="Closed"
+          value={counts.closed}
+          icon={Archive}
+          iconBgColor="bg-gray-100 dark:bg-gray-700"
+          iconColor="text-gray-600 dark:text-gray-400"
+        />
+        <StatCard
+          label="Cancelled"
+          value={counts.cancelled}
+          icon={Ban}
+          iconBgColor="bg-rose-100 dark:bg-rose-900/30"
+          iconColor="text-rose-600 dark:text-rose-400"
+        />
+        <StatCard
+          label="Reopened"
+          value={counts.reopened}
+          icon={RotateCcw}
+          iconBgColor="bg-orange-100 dark:bg-orange-900/30"
+          iconColor="text-orange-600 dark:text-orange-400"
+        />
+      </div>
+
+      {/* Recent Requests */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Overview of system-wide request statistics and management</p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {statCards.map((stat) => (
-          <div key={stat.title} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{stat.title}</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stat.value}</p>
-              </div>
-              <div className={`${stat.color} p-3 rounded-lg`}>
-                <stat.icon className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Requests</h2>
-          <Link to="/admin/requests" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-medium">View All</Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-900/50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Priority</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Submitted</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {dashboardData.recentRequests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{request.title}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{request.user?.name || 'Unknown'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(request.status)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{request.priority.toUpperCase()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {request.submittedAtFormatted || new Date(request.submittedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link to={`/admin/requests/${request.id}`} className="inline-flex items-center text-blue-600 hover:text-blue-700">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <Clock className="h-5 w-5" />
+          Recent Requests
+          <Link
+            to="/admin/requests"
+            className="ml-auto text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          >
+            View All
+          </Link>
+        </h2>
+        <RecentRequestsTable
+          requests={tableRequests}
+          viewRoute={(id) => `/admin/requests/${id}`}
+        />
       </div>
     </div>
   );

@@ -41,11 +41,6 @@ router.get(
   adminRequestController.getRequestById.bind(adminRequestController)
 );
 
-router.get(
-  '/requests/:requestId/logs',
-  adminRequestController.getRequestLogs.bind(adminRequestController)
-);
-
 // Admin actions
 router.put(
   '/requests/:requestId/close',

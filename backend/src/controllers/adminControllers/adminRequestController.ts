@@ -295,46 +295,6 @@ export class AdminRequestController {
     }
   };
 
-  // GET /admin/requests/:requestId/logs
-  getRequestLogs = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    try {
-      if (req.user?.role !== "admin")
-        throw new AppError("Access denied. Admin privileges required.", 403);
-
-      const logs = await RequestLog.findAll({
-        where: { requestId: req.params.requestId },
-        attributes: [
-          "id",
-          "requestId",
-          "oldStatus",
-          "newStatus",
-          "role",
-          "action",
-          "comments",
-          "timestamp",
-        ],
-        include: [
-          {
-            model: User,
-            as: "changedByUser",
-            attributes: ["id", "name", "email"],
-          },
-        ],
-        order: [["timestamp", "ASC"]],
-      });
-
-      res
-        .status(200)
-        .json({ success: true, count: logs.length, data: logs.map(formatLog) });
-    } catch (error) {
-      next(error);
-    }
-  };
-
   // GET /admin/dashboard
   getDashboardStats = async (
     req: AuthRequest,
