@@ -25,7 +25,7 @@ const createUmzug = async () => {
         }
         
         // Handle both .ts and .js files (compiled TypeScript)
-        let migration;
+        let migration: any;
         try {
           migration = require(migrationPath);
         } catch (error) {

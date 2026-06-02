@@ -15,11 +15,5 @@
     "experimentalDecorators": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "ts-node": {
-    "transpileOnly": true,
-    "compilerOptions": {
-      "module": "commonjs"
-    }
-  }
+  "exclude": ["node_modules", "dist"]
 }
