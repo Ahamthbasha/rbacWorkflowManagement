@@ -8,9 +8,9 @@
     "start": "node dist/app.js",
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
     "db:migrate": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:migrate",
-"db:migrate:undo": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:migrate:undo",
-"db:migrate:undo:all": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:migrate:undo:all",
-"db:seed": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:seed:all",
+    "db:migrate:undo": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:migrate:undo",
+    "db:migrate:undo:all": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:migrate:undo:all",
+    "db:seed": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:seed:all",
     "db:seed:undo": "npx sequelize-cli db:seed:undo",
     "db:seed:undo:all": "npx sequelize-cli db:seed:undo:all",
     "db:create": "npx sequelize-cli db:create",
@@ -44,7 +44,7 @@
     "sequelize-cli": "^6.6.5",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.0.0",
+    "typescript": "^5.0.4",
     "umzug": "^3.8.0"
   }
 }
