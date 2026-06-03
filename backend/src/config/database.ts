@@ -114,8 +114,8 @@ const initializeSequelize = async (): Promise<Sequelize> => {
       await sequelize.query(`SET SESSION time_zone = '${TIMEZONE}'`);
       console.log(`✅ MySQL session timezone set to ${TIMEZONE}`);
       
-      // Verify timezone is set correctly
-      const [result] = await sequelize.query("SELECT NOW() as current_time, @@session.time_zone as timezone");
+      // Verify timezone is set correctly - FIXED: added backticks around reserved word 'current_time'
+      const [result] = await sequelize.query("SELECT NOW() as `current_time`, @@session.time_zone as `timezone`");
       console.log("✅ MySQL current time:", result);
       
       sequelizeReady = true;
