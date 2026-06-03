@@ -9,12 +9,13 @@ import ClarificationResponseForm from "../../../components/common/ClarificationR
 import StatusBadge from "../../../components/common/StatusBadge";
 import InfoField from "../../../components/common/InfoField";
 import SectionCard from "../../../components/common/SectionCard";
-import {  ICONS } from "../../../components/common/iconPaths";
+import { ICONS } from "../../../components/common/iconPaths";
 import { Icon } from "../../../components/common/Icons";
 import { ActivityTimeline } from "../../../components/common/ActivityTimeline";
 import { RequestHeaderCard } from "../../../components/common/RequestHeaderCard";
 import { RequestSidebar } from "../../../components/common/RequestSidebar";
 import { priorityColor } from "../../../components/common/requestHelpers";
+import { formatDateInIST } from "../../../utils/timezoneUtils";
 
 const RequestDetail: React.FC = () => {
   const { requestId } = useParams<{ requestId: string }>();
@@ -323,13 +324,13 @@ const RequestDetail: React.FC = () => {
                 <InfoField label="Submitted">
                   {request.submittedAtFormatted ??
                     (request.createdAt
-                      ? new Date(request.createdAt).toLocaleDateString()
+                      ? formatDateInIST(request.createdAt)
                       : "—")}
                 </InfoField>
 
                 {request.updatedAt && (
                   <InfoField label="Last updated">
-                    {new Date(request.updatedAt).toLocaleString()}
+                    {formatDateInIST(request.updatedAt)}
                   </InfoField>
                 )}
               </div>

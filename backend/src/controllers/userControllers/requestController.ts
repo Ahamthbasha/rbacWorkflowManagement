@@ -11,6 +11,7 @@ import User from "../../models/userModel";
 import AppError from "../../utils/appError";
 import { formatRequestBase, attachLogs } from "../../utils/requestFormatters";
 import DashboardService from "../../services/DashboardService";
+import { getCurrentISTDate, getISTDateRange } from "../../utils/timezoneUtils";
 
 const Request = RequestModel;
 const RequestLog = RequestLogModel;
@@ -58,6 +59,8 @@ export class RequestController {
       const user = await User.findByPk(userId);
       if (!user) throw new AppError("User not found", 404);
 
+      const currentISTDate = getCurrentISTDate();
+
       const request = await Request.create({
         title,
         description,
@@ -65,7 +68,8 @@ export class RequestController {
         priority: priority || RequestPriority.MEDIUM,
         userId,
         status: RequestStatus.SUBMITTED,
-        submittedAt: new Date(),
+        submittedAt: currentISTDate,
+        createdAt: currentISTDate,
       });
 
       await RequestLog.create({
@@ -76,7 +80,7 @@ export class RequestController {
         role: userRole || "user",
         action: ActionType.CREATE,
         comments: "Request created",
-        timestamp: new Date(),
+        timestamp: currentISTDate,
       });
 
       res.status(201).json({
@@ -109,11 +113,17 @@ export class RequestController {
       if (status) whereClause.status = status;
       if (category) whereClause.category = category;
       if (priority) whereClause.priority = priority;
+      
+      // Handle date filtering with IST timezone
       if (startDate && endDate) {
+        const startRange = getISTDateRange(startDate);
+        const endRange = getISTDateRange(endDate);
+        
         whereClause.createdAt = {
-          [Op.between]: [new Date(startDate), new Date(endDate)],
+          [Op.between]: [startRange.start, endRange.end],
         };
       }
+      
       if (search) {
         whereClause[Op.or] = [
           { title: { [Op.like]: `%${search}%` } },
@@ -261,14 +271,15 @@ export class RequestController {
         throw new AppError("Only rejected requests can be edited", 400);
 
       const oldStatus = request.status;
+      const currentISTDate = getCurrentISTDate();
 
       request.title = title || request.title;
       request.description = description || request.description;
       request.category = category || request.category;
       request.priority = priority || request.priority;
-      request.editedAt = new Date();
+      request.editedAt = currentISTDate;
       request.status = RequestStatus.PENDING;
-      request.resubmittedAt = new Date();
+      request.resubmittedAt = currentISTDate;
       await request.save();
 
       await RequestLog.create({
@@ -279,7 +290,7 @@ export class RequestController {
         role: userRole || "user",
         action: ActionType.RESUBMIT,
         comments: "Request edited and resubmitted by user",
-        timestamp: new Date(),
+        timestamp: currentISTDate,
       });
 
       res.status(200).json({
@@ -317,6 +328,8 @@ export class RequestController {
         throw new AppError("No clarification requested for this request", 400);
 
       const oldStatus = request.status;
+      const currentISTDate = getCurrentISTDate();
+      
       request.status = RequestStatus.PENDING;
       request.clarificationResponse = response;
       await request.save();
@@ -329,7 +342,7 @@ export class RequestController {
         role: userRole || "user",
         action: ActionType.CLARIFICATION_RESPONDED,
         comments: response,
-        timestamp: new Date(),
+        timestamp: currentISTDate,
       });
 
       res.status(200).json({
@@ -368,6 +381,8 @@ export class RequestController {
         throw new AppError("Request cannot be cancelled at this stage", 400);
 
       const oldStatus = request.status;
+      const currentISTDate = getCurrentISTDate();
+      
       request.status = RequestStatus.CANCELLED;
       await request.save();
 
@@ -379,7 +394,7 @@ export class RequestController {
         role: userRole || "user",
         action: ActionType.STATUS_CHANGE,
         comments: "User cancelled the request",
-        timestamp: new Date(),
+        timestamp: currentISTDate,
       });
 
       res.status(200).json({

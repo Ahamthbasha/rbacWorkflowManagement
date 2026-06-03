@@ -1,4 +1,3 @@
-
 import { Op, WhereOptions } from "sequelize";
 import RequestModel, { RequestAttributes, RequestStatus } from "../models/requestModel";
 import User from "../models/userModel";

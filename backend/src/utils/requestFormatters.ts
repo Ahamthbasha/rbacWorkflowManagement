@@ -1,21 +1,13 @@
-
 import {
   STATUS_CONFIG,
   PRIORITY_CONFIG,
   CATEGORY_LABELS,
   ACTION_ICON_MAP,
 } from './requestConstants';
+import { formatDateInIST } from './timezoneUtils';
 
 export const formatIndianDate = (date: Date | string | null): string => {
-  if (!date) return 'N/A';
-  return new Date(date).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+  return formatDateInIST(date);
 };
 
 export const getActionLabel = (
@@ -48,7 +40,7 @@ export const formatLog = (log: any) => {
     actionLabel: getActionLabel(p.action, p.oldStatus, p.newStatus),
     actionIconName: ACTION_ICON_MAP[p.action] ?? 'History',
     comments: p.comments,
-    timestampFormatted: formatIndianDate(p.timestamp),
+    timestampFormatted: formatDateInIST(p.timestamp),
     changedByUser: p.changedByUser
       ? {
           id: p.changedByUser.id,
@@ -86,12 +78,12 @@ export const formatRequestBase = (p: any) => {
       color: priorityConfig.color,
     },
 
-    submittedAtFormatted:  formatIndianDate(p.submittedAt),
-    createdAtFormatted:    formatIndianDate(p.createdAt),
-    approvedAtFormatted:   p.approvedAt  ? formatIndianDate(p.approvedAt)  : null,
-    rejectedAtFormatted:   p.rejectedAt  ? formatIndianDate(p.rejectedAt)  : null,
-    closedAtFormatted:     p.closedAt    ? formatIndianDate(p.closedAt)    : null,
-    reopenedAtFormatted:   p.reopenedAt  ? formatIndianDate(p.reopenedAt)  : null,
+    submittedAtFormatted:  formatDateInIST(p.submittedAt),
+    createdAtFormatted:    formatDateInIST(p.createdAt),
+    approvedAtFormatted:   p.approvedAt  ? formatDateInIST(p.approvedAt)  : null,
+    rejectedAtFormatted:   p.rejectedAt  ? formatDateInIST(p.rejectedAt)  : null,
+    closedAtFormatted:     p.closedAt    ? formatDateInIST(p.closedAt)    : null,
+    reopenedAtFormatted:   p.reopenedAt  ? formatDateInIST(p.reopenedAt)  : null,
 
     comments:               p.comments,
     clarificationRequest:   p.clarificationRequest,
@@ -130,6 +122,6 @@ export const formatRecentRequest = (r: any) => {
     priorityDisplay: PRIORITY_CONFIG[p.priority]   ?? PRIORITY_CONFIG.medium,
     user:    p.user    ? { name: p.user.name }    : null,
     manager: p.manager ? { name: p.manager.name } : null,
-    submittedAtFormatted: formatIndianDate(p.submittedAt),
+    submittedAtFormatted: formatDateInIST(p.submittedAt),
   };
 };
