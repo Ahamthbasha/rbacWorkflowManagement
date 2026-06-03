@@ -1,3 +1,6 @@
+// IMPORTANT: Set timezone FIRST before any other imports
+process.env.TZ = 'Asia/Kolkata';
+
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -13,6 +16,11 @@ import adminRouter from './routes/adminRouter';
 import managerRouter from './routes/managerRouter';
 import AdminAuthController from './controllers/adminControllers/adminAuthController';
 import { runMigrations } from './scripts/runMigrations';
+
+// Verify timezone is set correctly
+console.log(`✅ Timezone set to: ${process.env.TZ}`);
+console.log(`✅ Current server time: ${new Date().toString()}`);
+console.log(`✅ IST time: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,6 +58,9 @@ app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'healthy', 
         timestamp: new Date(),
+        timezone: process.env.TZ,
+        serverTime: new Date().toString(),
+        istTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
         environment: NODE_ENV,
         frontendUrl: FRONTEND_URL,
         database: 'connected'
@@ -79,6 +90,10 @@ const initializeDatabase = async (retries = 5, delay = 5000) => {
             
             // Get sequelize connection
             const sequelize = await getSequelize();
+            
+            // Set MySQL timezone after connection
+            await sequelize.query("SET time_zone = '+05:30'");
+            console.log('✅ MySQL timezone set to IST (+05:30)');
             
             // Run migrations in production
             if (NODE_ENV === 'production') {

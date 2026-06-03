@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Plus } from 'lucide-react';
@@ -15,39 +15,50 @@ const MyRequests = () => {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState<FilterOptions>({});
-
-  const fetchRequests = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string | number> = {
-        page,
-        limit: 10,
-      };
-      if (filters.status) params.status = filters.status;
-      if (filters.category) params.category = filters.category;
-      if (filters.priority) params.priority = filters.priority;
-      if (filters.search) params.search = filters.search;
-      if (filters.startDate) params.startDate = filters.startDate;
-      if (filters.endDate) params.endDate = filters.endDate;
-
-      const response = await getUserRequests(params);
-
-      if (response.success) {
-        setRequests(response.data || []);
-        setTotal(response.pagination.total);
-        setTotalPages(response.pagination.totalPages);
-      }
-    } catch (error) {
-      console.error('Error fetching requests:', error);
-      toast.error('Failed to load requests');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, filters]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const fetchRequests = async () => {
+      setLoading(true);
+      try {
+        const params: Record<string, string | number> = {
+          page,
+          limit: 10,
+        };
+        if (filters.status) params.status = filters.status;
+        if (filters.category) params.category = filters.category;
+        if (filters.priority) params.priority = filters.priority;
+        if (filters.search) params.search = filters.search;
+        if (filters.startDate) params.startDate = filters.startDate;
+        if (filters.endDate) params.endDate = filters.endDate;
+
+        const response = await getUserRequests(params);
+
+        if (!cancelled && response.success) {
+          setRequests(response.data || []);
+          setTotal(response.pagination.total);
+          setTotalPages(response.pagination.totalPages);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Error fetching requests:', error);
+          toast.error('Failed to load requests');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchRequests();
-  }, [fetchRequests]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, filters, refreshTrigger]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -59,7 +70,7 @@ const MyRequests = () => {
   };
 
   const handleRefresh = () => {
-    fetchRequests();
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   const pagination = {

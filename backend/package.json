@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "dev": "TZ=Asia/Kolkata NODE_TZ=Asia/Kolkata ts-node-dev --respawn --transpile-only src/app.ts",
     "postinstall": "npm run build",
     "db:migrate": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:migrate",
     "db:migrate:undo": "cross-env TS_NODE_TRANSPILE_ONLY=true npx sequelize-cli db:migrate:undo",

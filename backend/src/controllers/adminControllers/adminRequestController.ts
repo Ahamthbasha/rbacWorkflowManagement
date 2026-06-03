@@ -7,6 +7,7 @@ import User from "../../models/userModel";
 import AppError from "../../utils/appError";
 import { formatRequestBase, attachLogs } from "../../utils/requestFormatters";
 import DashboardService from "../../services/DashboardService";
+import { getCurrentISTDate, getISTDateRange } from "../../utils/timezoneUtils"; // ADD THIS
 
 const Request = RequestModel;
 const RequestLog = RequestLogModel;
@@ -54,11 +55,16 @@ export class AdminRequestController {
       if (status) where.status = status;
       if (category) where.category = category;
       if (priority) where.priority = priority;
+      
+      // UPDATE: Use IST date range for filtering
       if (startDate && endDate) {
+        const startRange = getISTDateRange(startDate);
+        const endRange = getISTDateRange(endDate);
         where.createdAt = {
-          [Op.between]: [new Date(startDate), new Date(endDate)],
+          [Op.between]: [startRange.start, endRange.end],
         };
       }
+      
       if (search) {
         where[Op.or] = [
           { title: { [Op.like]: `%${search}%` } },
@@ -203,7 +209,7 @@ export class AdminRequestController {
       const oldStatus = request.status;
       request.status = RequestStatus.CLOSED;
       request.comments = closureNote || request.comments;
-      request.closedAt = new Date();
+      request.closedAt = getCurrentISTDate(); // UPDATE: Use IST date
       await request.save();
 
       await RequestLog.create({
@@ -214,7 +220,7 @@ export class AdminRequestController {
         role: userRole,
         action: ActionType.STATUS_CHANGE,
         comments: closureNote || `Request closed by ${userRole}`,
-        timestamp: new Date(),
+        timestamp: getCurrentISTDate(), // UPDATE: Use IST date
       });
 
       res.status(200).json({
@@ -257,7 +263,7 @@ export class AdminRequestController {
       const oldStatus = request.status;
       request.status = RequestStatus.PENDING;
       request.reopenReason = reason;
-      request.reopenedAt = new Date();
+      request.reopenedAt = getCurrentISTDate(); // UPDATE: Use IST date
       await request.save();
 
       await RequestLog.create({
@@ -268,7 +274,7 @@ export class AdminRequestController {
         role: userRole,
         action: ActionType.REOPEN,
         comments: `Admin reopened request for further review: ${reason}`,
-        timestamp: new Date(),
+        timestamp: getCurrentISTDate(), // UPDATE: Use IST date
       });
 
       res.status(200).json({

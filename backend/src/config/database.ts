@@ -7,6 +7,7 @@ import path from "path";
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === "production";
+const TIMEZONE = '+05:30'; // IST timezone
 
 const getSSLConfig = () => {
   if (!isProduction) {
@@ -47,17 +48,23 @@ const sequelize = new Sequelize(
     port: parseInt(process.env.DB_PORT || "3306"),
     dialect: "mysql",
     logging: false,
+    timezone: TIMEZONE, // Set timezone for Sequelize
     pool: {
       max: 10,
       min: 0,
       acquire: 30000,
       idle: 10000,
     },
-    dialectOptions: isProduction
-      ? {
-          ssl: getSSLConfig(),
-        }
-      : {},
+    dialectOptions: {
+      // MySQL timezone configuration
+      timezone: TIMEZONE,
+      // Important: Return dates as strings to avoid conversion issues
+      dateStrings: true,
+      typeCast: true,
+      ...(isProduction && {
+        ssl: getSSLConfig(),
+      }),
+    },
   },
 );
 
@@ -84,7 +91,7 @@ const initDatabase = async () => {
     `CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`,
   );
   await connection.end();
-  console.log("Database ensured");
+  console.log("✅ Database ensured");
 };
 
 const initializeSequelize = async (): Promise<Sequelize> => {
@@ -101,7 +108,16 @@ const initializeSequelize = async (): Promise<Sequelize> => {
 
     try {
       await sequelize.authenticate();
-      console.log("Sequelize connected to MySQL!");
+      console.log("✅ Sequelize connected to MySQL!");
+      
+      // Set MySQL session timezone to IST
+      await sequelize.query(`SET SESSION time_zone = '${TIMEZONE}'`);
+      console.log(`✅ MySQL session timezone set to ${TIMEZONE}`);
+      
+      // Verify timezone is set correctly
+      const [result] = await sequelize.query("SELECT NOW() as current_time, @@session.time_zone as timezone");
+      console.log("✅ MySQL current time:", result);
+      
       sequelizeReady = true;
     } catch (error) {
       console.error("Sequelize connection failed:", error);
@@ -114,8 +130,21 @@ const initializeSequelize = async (): Promise<Sequelize> => {
   return pendingInitialization;
 };
 
+// Initialize the database connection
 initializeSequelize();
 
-export const getSequelize = async (): Promise<Sequelize> =>
-  initializeSequelize();
+export const getSequelize = async (): Promise<Sequelize> => {
+  // Ensure timezone is set on each connection
+  const sequelizeInstance = await initializeSequelize();
+  
+  // Set timezone again for this connection (good practice)
+  try {
+    await sequelizeInstance.query(`SET SESSION time_zone = '${TIMEZONE}'`);
+  } catch (error) {
+    console.warn("Failed to set timezone on connection:", error);
+  }
+  
+  return sequelizeInstance;
+};
+
 export { sequelize };

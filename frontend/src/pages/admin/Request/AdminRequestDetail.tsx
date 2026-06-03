@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -22,6 +22,7 @@ import { RequestHeaderCard } from "../../../components/common/RequestHeaderCard"
 import { RequestSidebar } from "../../../components/common/RequestSidebar";
 import { ActionModal } from "../../../components/common/ActionModal";
 import { priorityColor } from "../../../components/common/requestHelpers";
+import { formatDateInIST } from "../../../utils/timezoneUtils"; // ADD THIS
 
 const isAdminActions = (
   actions: ActionButtons | undefined,
@@ -283,7 +284,7 @@ const AdminRequestDetail: React.FC = () => {
                 <InfoField label="Submitted">
                   {request.submittedAtFormatted ??
                     (request.createdAt
-                      ? new Date(request.createdAt).toLocaleDateString()
+                      ? formatDateInIST(request.createdAt) // UPDATED
                       : "—")}
                 </InfoField>
                 {request.approvedAtFormatted && (

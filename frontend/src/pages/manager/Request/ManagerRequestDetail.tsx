@@ -22,6 +22,7 @@ import { RequestHeaderCard } from "../../../components/common/RequestHeaderCard"
 import { RequestSidebar } from "../../../components/common/RequestSidebar";
 import { ActionModal } from "../../../components/common/ActionModal";
 import { priorityColor } from "../../../components/common/requestHelpers";
+import { formatDateInIST } from "../../../utils/timezoneUtils";
 
 const isManagerActions = (
   actions: ActionButtons | undefined,
@@ -402,13 +403,13 @@ const ManagerRequestDetail: React.FC = () => {
                 <InfoField label="Submitted">
                   {request.submittedAtFormatted ??
                     (request.createdAt
-                      ? new Date(request.createdAt).toLocaleDateString()
+                      ? formatDateInIST(request.createdAt)
                       : "—")}
                 </InfoField>
 
                 {request.updatedAt && (
                   <InfoField label="Last updated">
-                    {new Date(request.updatedAt).toLocaleString()}
+                    {formatDateInIST(request.updatedAt)}
                   </InfoField>
                 )}
 
