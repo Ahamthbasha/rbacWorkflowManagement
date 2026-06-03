@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Formik, Form } from "formik";
 import { adminLogin } from "../../../api/auth/adminAuth";
 import { useState } from "react";
+import { type AxiosError } from "axios";
 
 const loginSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
@@ -11,6 +12,12 @@ const loginSchema = Yup.object().shape({
     .min(6, "Password must be at least 6 characters")
     .required("Password is required"),
 });
+
+interface ErrorResponse {
+  success: boolean;
+  message?: string;
+  errors?: Array<{ msg: string; path: string }>;
+}
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -34,16 +41,41 @@ const LoginPage = () => {
         
         toast.success(response.message);
         navigate("/admin/dashboard");
-      } else {
-        toast.error(response.message);
       }
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("Login error:", error.message);
-      } else {
-        console.error("Login error:", error);
+      const err = error as AxiosError<ErrorResponse>;
+      console.error("Login error:", err);
+      
+      // Handle different error scenarios
+      if (err.response?.data) {
+        const responseData = err.response.data;
+        
+        // Handle validation errors array
+        if (responseData.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+          // Show only the first validation error
+          toast.error(responseData.errors[0].msg);
+        } 
+        // Handle single message error (this will catch "Invalid admin credentials")
+        else if (responseData.message) {
+          toast.error(responseData.message);
+        } 
+        // Fallback error message
+        else {
+          toast.error("Login failed. Please check your credentials and try again.");
+        }
+      } 
+      // Handle network timeout
+      else if (err.code === "ECONNABORTED") {
+        toast.error("Request timeout. Please try again.");
+      } 
+      // Handle network connection error
+      else if (err.message === "Network Error") {
+        toast.error("Network error. Please check your connection.");
+      } 
+      // Handle any other unexpected errors
+      else {
+        toast.error("Login failed. Please check your credentials and try again.");
       }
-      toast.error("Login failed. Please check your credentials and try again.");
     } finally {
       setIsLoading(false);
     }

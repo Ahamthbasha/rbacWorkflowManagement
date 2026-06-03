@@ -9,11 +9,7 @@ import RequestModel, {
 import RequestLogModel, { ActionType } from "../../models/requestLogModel";
 import User from "../../models/userModel";
 import AppError from "../../utils/appError";
-import {
-  formatLog,
-  formatRequestBase,
-  attachLogs,
-} from "../../utils/requestFormatters";
+import { formatRequestBase, attachLogs } from "../../utils/requestFormatters";
 import DashboardService from "../../services/DashboardService";
 
 const Request = RequestModel;
@@ -47,7 +43,6 @@ export class RequestController {
     this.dashboardService = dashboardService;
   }
 
-  // POST /user/requests
   createRequest = async (
     req: AuthRequest,
     res: Response,
@@ -94,7 +89,6 @@ export class RequestController {
     }
   };
 
-  // GET /user/requests
   getUserRequests = async (
     req: AuthRequest,
     res: Response,
@@ -168,7 +162,6 @@ export class RequestController {
     }
   };
 
-  // GET /user/requests/:requestId
   getRequestById = async (
     req: AuthRequest,
     res: Response,
@@ -205,7 +198,7 @@ export class RequestController {
           {
             model: User,
             as: "user",
-            attributes: ["id", "name", "email", "department"],
+            attributes: ["id", "name", "email"],
           },
           { model: User, as: "manager", attributes: ["id", "name", "email"] },
           { model: User, as: "admin", attributes: ["id", "name", "email"] },
@@ -239,14 +232,14 @@ export class RequestController {
       if (request.userId !== userId)
         throw new AppError("You are not authorized to view this request", 403);
 
-      res.status(200).json({ success: true, data: formatRequest(request, true) });
+      res
+        .status(200)
+        .json({ success: true, data: formatRequest(request, true) });
     } catch (error) {
       next(error);
     }
   };
 
-  // PATCH /user/requests/:requestId/edit
-  // Edits a rejected request and immediately resubmits it
   editAndResubmitRequest = async (
     req: AuthRequest,
     res: Response,
@@ -299,7 +292,6 @@ export class RequestController {
     }
   };
 
-  // PATCH /user/requests/:requestId/clarify
   respondToClarification = async (
     req: AuthRequest,
     res: Response,
@@ -350,7 +342,6 @@ export class RequestController {
     }
   };
 
-  // PATCH /user/requests/:requestId/cancel
   cancelRequest = async (
     req: AuthRequest,
     res: Response,
@@ -401,7 +392,6 @@ export class RequestController {
     }
   };
 
-  // GET /user/dashboard
   getUserDashboardStats = async (
     req: AuthRequest,
     res: Response,

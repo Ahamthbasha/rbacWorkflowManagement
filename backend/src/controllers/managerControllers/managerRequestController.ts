@@ -10,14 +10,12 @@ import {
   formatLog,
   formatRequestBase,
   attachLogs,
-  formatRecentRequest,
 } from "../../utils/requestFormatters";
 import DashboardService from "../../services/DashboardService";
 
 const Request = RequestModel;
 const RequestLog = RequestLogModel;
 
-// ─── Formatter ────────────────────────────────────────────────────────────────
 
 const formatRequest = (request: any, includeLogs = false) => {
   const p = request.toJSON ? request.toJSON() : request;
@@ -38,15 +36,12 @@ const formatRequest = (request: any, includeLogs = false) => {
   if (includeLogs && p.logs) attachLogs(result, p.logs);
   return result;
 };
-
-// ─── Controller ───────────────────────────────────────────────────────────────
-
 export class ManagerRequestController {
   private dashboardService: DashboardService;
   constructor(dashboardService: DashboardService) {
     this.dashboardService = dashboardService;
   }
-  // GET /manager/requests
+
   getAllRequests = async (
     req: AuthRequest,
     res: Response,
@@ -98,7 +93,7 @@ export class ManagerRequestController {
           {
             model: User,
             as: "user",
-            attributes: ["id", "name", "email", "department"],
+            attributes: ["id", "name", "email"],
           },
           { model: User, as: "manager", attributes: ["id", "name", "email"] },
         ],
@@ -123,7 +118,6 @@ export class ManagerRequestController {
     }
   };
 
-  // GET /manager/requests/pending
   getPendingRequests = async (
     req: AuthRequest,
     res: Response,
@@ -166,7 +160,7 @@ export class ManagerRequestController {
           {
             model: User,
             as: "user",
-            attributes: ["id", "name", "email", "department"],
+            attributes: ["id", "name", "email", ],
           },
         ],
       });
@@ -190,7 +184,6 @@ export class ManagerRequestController {
     }
   };
 
-  // GET /manager/requests/:requestId
   getRequestById = async (
     req: AuthRequest,
     res: Response,
@@ -223,7 +216,7 @@ export class ManagerRequestController {
           {
             model: User,
             as: "user",
-            attributes: ["id", "name", "email", "department"],
+            attributes: ["id", "name", "email"],
           },
           { model: User, as: "manager", attributes: ["id", "name", "email"] },
           { model: User, as: "admin", attributes: ["id", "name", "email"] },
@@ -262,7 +255,6 @@ export class ManagerRequestController {
     }
   };
 
-  // PUT /manager/requests/:requestId/approve
   approveRequest = async (
     req: AuthRequest,
     res: Response,
@@ -313,7 +305,6 @@ export class ManagerRequestController {
     }
   };
 
-  // PUT /manager/requests/:requestId/reject
   rejectRequest = async (
     req: AuthRequest,
     res: Response,
@@ -367,7 +358,6 @@ export class ManagerRequestController {
     }
   };
 
-  // POST /manager/requests/:requestId/clarify
   requestClarification = async (
     req: AuthRequest,
     res: Response,
@@ -420,7 +410,6 @@ export class ManagerRequestController {
     }
   };
 
-  // GET /manager/requests/:requestId/logs
   getRequestLogs = async (
     req: AuthRequest,
     res: Response,
@@ -469,12 +458,10 @@ export class ManagerRequestController {
       if (req.user?.role !== "manager")
         throw new AppError("Access denied. Manager privileges required.", 403);
 
-      // Get manager's department
       const manager = await User.findByPk(req.user.userId);
 
       const stats = await DashboardService.getDashboardStats({
         userRole: req.user.role,
-        department: manager?.department,
       });
 
       res.status(200).json({

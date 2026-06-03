@@ -1,80 +1,69 @@
-// routes/userRouter.ts
-import { Router } from 'express';
-import validateRequest from '../utils/validateRequest'; 
-import { 
-  registerValidator, 
-  loginValidator, 
-} from '../validator/authValidator';
-import container from '../diContainer/container';  
-import { createRequestValidator } from '../validator/requestValidator';
+import { Router } from "express";
+import validateRequest from "../utils/validateRequest";
+import { registerValidator, loginValidator } from "../validator/authValidator";
+import container from "../diContainer/container";
+import {
+  createRequestValidator,
+  editRequestValidator,
+} from "../validator/requestValidator";
 const router = Router();
 const { userAuthController, authMiddleware, userRequestController } = container;
 
 router.post(
-  '/register',
+  "/register",
   registerValidator,
   validateRequest,
-  userAuthController.register.bind(userAuthController)
+  userAuthController.register.bind(userAuthController),
 );
 
 router.post(
-  '/login',
+  "/login",
   loginValidator,
   validateRequest,
-  userAuthController.login.bind(userAuthController)
+  userAuthController.login.bind(userAuthController),
 );
 
 router.post(
-  '/logout',
+  "/logout",
   authMiddleware.authenticate.bind(authMiddleware),
-  userAuthController.logout.bind(userAuthController)
+  userAuthController.logout.bind(userAuthController),
 );
 
-// All user request routes require authentication
 router.use(authMiddleware.authenticate.bind(authMiddleware));
 router.use(authMiddleware.isUser.bind(authMiddleware));
 
 router.get(
-  '/dashboard',
-  userRequestController.getUserDashboardStats.bind(userRequestController)
+  "/dashboard",
+  userRequestController.getUserDashboardStats.bind(userRequestController),
 );
 
-// ==================== REQUEST MANAGEMENT ====================
-
-// Create a new request
 router.post(
-  '/requests',
+  "/requests",
   createRequestValidator,
   validateRequest,
-  userRequestController.createRequest.bind(userRequestController)
+  userRequestController.createRequest.bind(userRequestController),
 );
 
-// Get all requests for the authenticated user
 router.get(
-  '/requests',
-  userRequestController.getUserRequests.bind(userRequestController)
+  "/requests",
+  userRequestController.getUserRequests.bind(userRequestController),
 );
 
-// Get a specific request by REQUEST ID
 router.get(
-  '/requests/:requestId',
-  userRequestController.getRequestById.bind(userRequestController)
+  "/requests/:requestId",
+  userRequestController.getRequestById.bind(userRequestController),
 );
 
-// ==================== EDIT & RESUBMIT (Only for rejected requests) ====================
-
-// Edit rejected request
 router.put(
-  '/requests/:requestId/editResubmit',
-  userRequestController.editAndResubmitRequest.bind(userRequestController)
+  "/requests/:requestId/editResubmit",
+  editRequestValidator,
+  validateRequest,
+  userRequestController.editAndResubmitRequest.bind(userRequestController),
 );
 
-// ==================== CLARIFICATION RESPONSES ====================
-
-// Respond to clarification request from manager
 router.put(
-  '/requests/:requestId/clarify',
-  userRequestController.respondToClarification.bind(userRequestController)
+  "/requests/:requestId/clarify",
+  userRequestController.respondToClarification.bind(userRequestController),
 );
 
 export default router;

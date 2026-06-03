@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FileText, X, Clock, AlertCircle, Send } from 'lucide-react';
 import InputField from '../../../components/common/InputField';
+import ConfirmDialog from '../../../components/common/Confirmdialog';
 import { getRequestById, editAndResubmitRequest } from '../../../api/action/userAction';
 import type { RequestCategory, RequestPriority, WorkflowRequest } from '../../../types/requestTypes';
 
@@ -11,11 +13,17 @@ const EditRequest = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: 'other' as RequestCategory,
     priority: 'medium' as RequestPriority,
+  });
+  const [errors, setErrors] = useState({
+    title: '',
+    description: '',
   });
   const [originalRequest, setOriginalRequest] = useState<WorkflowRequest | null>(null);
 
@@ -50,31 +58,62 @@ const EditRequest = () => {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Clear error when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors = {
+      title: '',
+      description: '',
+    };
+    
+    // Title validation
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    } else if (formData.title.trim().length < 5) {
+      newErrors.title = 'Title must be at least 5 characters';
+    } else if (formData.title.length > 200) {
+      newErrors.title = 'Title must not exceed 200 characters';
+    } else if (!/^[a-zA-Z0-9\s\-_,.!?()]+$/.test(formData.title)) {
+      newErrors.title = 'Title contains invalid characters';
+    }
+    
+    // Description validation
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (formData.description.trim().length < 20) {
+      newErrors.description = 'Description must be at least 20 characters';
+    } else if (formData.description.length > 5000) {
+      newErrors.description = 'Description must not exceed 5000 characters';
+    } else if (!/^[a-zA-Z0-9\s\-_,.!?()\n\r]+$/.test(formData.description)) {
+      newErrors.description = 'Description contains invalid characters';
+    }
+    
+    setErrors(newErrors);
+    return !newErrors.title && !newErrors.description;
   };
 
   const handleSubmit = async () => {
-    if (!formData.title.trim()) {
-      toast.error('Please enter a title');
-      return;
-    }
-    if (!formData.description.trim()) {
-      toast.error('Please enter a description');
-      return;
-    }
-    if (formData.description.length < 10) {
-      toast.error('Description must be at least 10 characters');
-      return;
-    }
-    if (!window.confirm('Are you sure you want to save changes and resubmit this request for review?')) {
-      return;
-    }
+    if (!validateForm()) return;
+    setShowSubmitConfirm(true);
+  };
 
+  const handleConfirmSubmit = async () => {
+    setShowSubmitConfirm(false);
     setIsSubmitting(true);
     try {
       const response = await editAndResubmitRequest(requestId!, {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         category: formData.category,
         priority: formData.priority,
       });
@@ -94,9 +133,12 @@ const EditRequest = () => {
   };
 
   const handleCancel = () => {
-    if (window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-      navigate('/myRequests');
-    }
+    setShowCancelConfirm(true);
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelConfirm(false);
+    navigate('/myRequests');
   };
 
   const categories = [
@@ -164,17 +206,28 @@ const EditRequest = () => {
             Request Details
           </h2>
           <div className="space-y-5">
-            <InputField
-              label="Request Title"
-              id="title"
-              name="title"
-              type="text"
-              placeholder="e.g., Database Access Request, New Laptop, etc."
-              value={formData.title}
-              onChange={handleChange}
-              required
-              icon={<FileText className="h-4 w-4 text-gray-400" />}
-            />
+            <div>
+              <InputField
+                label="Request Title"
+                id="title"
+                name="title"
+                type="text"
+                placeholder="e.g., Database Access Request, New Laptop, etc."
+                value={formData.title}
+                onChange={handleChange}
+                required
+                icon={<FileText className="h-4 w-4 text-gray-400" />}
+              />
+              {errors.title && (
+                <p className="mt-1 text-xs text-red-600 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {errors.title}
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Minimum 5 characters, maximum 200 characters
+              </p>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description
@@ -186,10 +239,18 @@ const EditRequest = () => {
                 onChange={handleChange}
                 required
                 placeholder="Please provide detailed information about your request..."
-                className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200 ${
+                  errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
               />
+              {errors.description && (
+                <p className="mt-1 text-xs text-red-600 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {errors.description}
+                </p>
+              )}
               <p className="mt-1 text-xs text-gray-500">
-                Minimum 10 characters. Be as specific as possible.
+                Minimum 20 characters, maximum 5000 characters. Be as specific as possible.
               </p>
             </div>
           </div>
@@ -295,6 +356,31 @@ const EditRequest = () => {
           </button>
         </div>
       </form>
+
+      {/* Submit Confirmation Dialog */}
+      <ConfirmDialog
+        open={showSubmitConfirm}
+        title="Confirm Resubmission"
+        message="Are you sure you want to save changes and resubmit this request for review?"
+        confirmLabel="Yes, Resubmit"
+        cancelLabel="Cancel"
+        variant="primary"
+        loading={isSubmitting}
+        onConfirm={handleConfirmSubmit}
+        onCancel={() => setShowSubmitConfirm(false)}
+      />
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        open={showCancelConfirm}
+        title="Cancel Editing"
+        message="Are you sure you want to cancel? Any unsaved changes will be lost."
+        confirmLabel="Yes, Cancel"
+        cancelLabel="Continue Editing"
+        variant="danger"
+        onConfirm={handleConfirmCancel}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
     </div>
   );
 };

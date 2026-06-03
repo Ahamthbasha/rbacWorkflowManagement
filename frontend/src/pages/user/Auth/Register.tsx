@@ -1,28 +1,49 @@
-// pages/user/Auth/Register.tsx
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { type AxiosError } from "axios";
 import { useState } from "react";
-import InputField from "../../../components/common/InputField"; 
-import PasswordField from "../../../components/common/PasswordField"; 
-import { registerUser } from "../../../api/auth/userAuth"; 
-import { useDispatch } from "react-redux";
-import { setUser } from "../../../redux/slices/userSlice";
-import { Shield, Sparkles } from "lucide-react";
+import InputField from "../../../components/common/InputField";
+import PasswordField from "../../../components/common/PasswordField";
+import { registerUser } from "../../../api/auth/userAuth";
+import { Shield, Sparkles, CheckCircle, XCircle } from "lucide-react";
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email"),
+    name: z
+      .string()
+      .min(5, "Name must be at least 5 characters")
+      .max(50, "Name must not exceed 50 characters")
+      .regex(/^[A-Za-z\s]+$/, "Name can only contain letters and spaces")
+      .refine((val) => val.trim().length === val.length, {
+        message: "Name cannot have leading or trailing spaces",
+      })
+      .refine((val) => !val.includes("  "), {
+        message: "Name cannot have multiple consecutive spaces",
+      }),
+
+    email: z
+      .string()
+      .email("Please enter a valid email address")
+      .regex(
+        /^[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/,
+        "Please provide a professional email address",
+      )
+      .transform((val) => val.toLowerCase().trim()),
+
     password: z
       .string()
       .min(6, "Password must be at least 6 characters")
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
+      .regex(/[0-9]/, "Password must contain at least one number")
+      .regex(
+        /[@$!%*?&]/,
+        "Password must contain at least one special character (@$!%*?&)",
+      ),
+
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -40,55 +61,84 @@ interface ErrorResponse {
 
 export default function Register() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    control,
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
+    mode: "onChange",
   });
+
+  const watchPassword = useWatch({
+    control,
+    name: "password",
+    defaultValue: "",
+  });
+
+  const passwordStrength = {
+    length: watchPassword.length >= 6,
+    uppercase: /[A-Z]/.test(watchPassword),
+    lowercase: /[a-z]/.test(watchPassword),
+    number: /[0-9]/.test(watchPassword),
+    special: /[@$!%*?&]/.test(watchPassword),
+  };
 
   const onSubmit = async (data: RegisterForm) => {
     setIsSubmitting(true);
     try {
       const { name, email, password } = data;
-      const res = await registerUser({ name, email, password });
+      const response = await registerUser({ name, email, password });
 
-      if (res.success && res.data?.user) {
-        // Note: Using _id as per your userSlice expects _id
-        dispatch(setUser({
-          _id: res.data.user.id,
-          name: res.data.user.name,
-          email: res.data.user.email,
-          role: res.data.user.role,
-        }));
-        
-        toast.success(res.message || "Registration successful! Please login.");
-        navigate("/login");
-      } else if (res.success) {
-        toast.success("Registration successful! Please login.");
-        navigate("/login");
+      // Show success message
+      if (response.success) {
+        toast.success(
+          response.message || "Registration successful! Please login.",
+        );
+        // Navigate to login page after 2 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
       }
     } catch (error: unknown) {
       const err = error as AxiosError<ErrorResponse>;
-      
+
+      // Handle different error scenarios
       if (err.response?.data) {
         const responseData = err.response.data;
-        
-        if (responseData.errors && Array.isArray(responseData.errors)) {
-          responseData.errors.forEach((validationErr) => {
-            toast.error(validationErr.msg);
-          });
-        } else if (responseData.message) {
+
+        // Handle validation errors array
+        if (
+          responseData.errors &&
+          Array.isArray(responseData.errors) &&
+          responseData.errors.length > 0
+        ) {
+          // Show only the first validation error
+          toast.error(responseData.errors[0].msg);
+        }
+        // Handle single message error
+        else if (responseData.message) {
           toast.error(responseData.message);
-        } else {
+        }
+        // Fallback error message
+        else {
           toast.error("Registration failed. Please try again.");
         }
-      } else {
-        toast.error("Network error. Please check your connection and try again.");
+      }
+      // Handle network timeout
+      else if (err.code === "ECONNABORTED") {
+        toast.error("Request timeout. Please try again.");
+      }
+      // Handle network connection error
+      else if (err.message === "Network Error") {
+        toast.error("Network error. Please check your connection.");
+      }
+      // Handle any other unexpected errors
+      else {
+        toast.error("Registration failed. Please try again.");
       }
     } finally {
       setIsSubmitting(false);
@@ -130,13 +180,47 @@ export default function Register() {
               error={errors.email?.message}
             />
 
-            <PasswordField
-              label="Password"
-              id="password"
-              placeholder="••••••••"
-              {...register("password")}
-              error={errors.password?.message}
-            />
+            {/* Password Field with Strength Indicator */}
+            <div>
+              <PasswordField
+                label="Password"
+                id="password"
+                placeholder="••••••••"
+                {...register("password")}
+                error={errors.password?.message}
+              />
+
+              {/* Password Strength Indicator */}
+              {watchPassword && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Password requirements:
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <RequirementCheck
+                      met={passwordStrength.length}
+                      text="At least 6 characters"
+                    />
+                    <RequirementCheck
+                      met={passwordStrength.uppercase}
+                      text="One uppercase letter"
+                    />
+                    <RequirementCheck
+                      met={passwordStrength.lowercase}
+                      text="One lowercase letter"
+                    />
+                    <RequirementCheck
+                      met={passwordStrength.number}
+                      text="One number"
+                    />
+                    <RequirementCheck
+                      met={passwordStrength.special}
+                      text="One special character (@$!%*?&)"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <PasswordField
               label="Confirm Password"
@@ -162,9 +246,25 @@ export default function Register() {
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Creating Account...
                 </>
@@ -180,8 +280,8 @@ export default function Register() {
           <div className="mt-8 text-center">
             <p className="text-gray-600 dark:text-gray-400">
               Already have an account?{" "}
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
               >
                 Sign in
@@ -191,7 +291,8 @@ export default function Register() {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-500">
-              By signing up, you agree to our Terms of Service and Privacy Policy
+              By signing up, you agree to our Terms of Service and Privacy
+              Policy
             </p>
           </div>
         </div>
@@ -199,3 +300,23 @@ export default function Register() {
     </div>
   );
 }
+
+// Helper component for password requirements
+const RequirementCheck = ({ met, text }: { met: boolean; text: string }) => (
+  <div className="flex items-center space-x-1">
+    {met ? (
+      <CheckCircle className="h-3 w-3 text-green-500" />
+    ) : (
+      <XCircle className="h-3 w-3 text-gray-400" />
+    )}
+    <span
+      className={
+        met
+          ? "text-green-600 dark:text-green-400"
+          : "text-gray-500 dark:text-gray-500"
+      }
+    >
+      {text}
+    </span>
+  </div>
+);

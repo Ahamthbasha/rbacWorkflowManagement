@@ -1,4 +1,4 @@
-// pages/user/request/CreateRequest.tsx
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -6,54 +6,90 @@ import {
   FileText, 
   Send, 
   X, 
-  Clock
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import InputField from '../../../components/common/InputField'; 
+import ConfirmDialog from '../../../components/common/Confirmdialog';
 import { createRequest } from '../../../api/action/userAction';
 import { type RequestCategory, type RequestPriority } from '../../../types/requestTypes';
 
 const CreateRequest = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: 'other' as RequestCategory,
     priority: 'medium' as RequestPriority,
   });
+  const [errors, setErrors] = useState({
+    title: '',
+    description: '',
+  });
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    if (errors[name as keyof typeof errors]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateForm = (): boolean => {
+    const newErrors = {
+      title: '',
+      description: '',
+    };
     
-    // Validation
     if (!formData.title.trim()) {
-      toast.error('Please enter a title');
-      return;
+      newErrors.title = 'Title is required';
+    } else if (formData.title.trim().length < 5) {
+      newErrors.title = 'Title must be at least 5 characters';
+    } else if (formData.title.length > 200) {
+      newErrors.title = 'Title must not exceed 200 characters';
+    } else if (!/^[a-zA-Z0-9\s\-_,.!?()]+$/.test(formData.title)) {
+      newErrors.title = 'Title contains invalid characters';
     }
+    
     if (!formData.description.trim()) {
-      toast.error('Please enter a description');
-      return;
+      newErrors.description = 'Description is required';
+    } else if (formData.description.trim().length < 20) {
+      newErrors.description = 'Description must be at least 20 characters';
+    } else if (formData.description.length > 5000) {
+      newErrors.description = 'Description must not exceed 5000 characters';
+    } else if (!/^[a-zA-Z0-9\s\-_,.!?()\n\r]+$/.test(formData.description)) {
+      newErrors.description = 'Description contains invalid characters';
     }
-    if (formData.description.length < 10) {
-      toast.error('Description must be at least 10 characters');
-      return;
-    }
+    
+    setErrors(newErrors);
+    return !newErrors.title && !newErrors.description;
+  };
 
+  const handleSubmit = () => {
+    if (validateForm()) {
+      setShowConfirm(true);
+    }
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowConfirm(false);
     setIsSubmitting(true);
     
     try {
       const response = await createRequest({
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         category: formData.category,
         priority: formData.priority,
       });
@@ -66,7 +102,6 @@ const CreateRequest = () => {
       }
     } catch (error: unknown) {
       console.error('Create request error:', error);
-      // Type guard to safely access error properties
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string } } };
         toast.error(axiosError.response?.data?.message || 'Failed to create request. Please try again.');
@@ -81,7 +116,10 @@ const CreateRequest = () => {
   };
 
   const handleCancel = () => {
-    if (window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+    if (formData.title.trim() || formData.description.trim()) {
+      setShowConfirm(false);
+      navigate('/myRequests');
+    } else {
       navigate('/myRequests');
     }
   };
@@ -120,7 +158,7 @@ const CreateRequest = () => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
         {/* Title Field */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -128,17 +166,28 @@ const CreateRequest = () => {
           </h2>
           
           <div className="space-y-5">
-            <InputField
-              label="Request Title"
-              id="title"
-              name="title"
-              type="text"
-              placeholder="e.g., Database Access Request, New Laptop, etc."
-              value={formData.title}
-              onChange={handleChange}
-              required
-              icon={<FileText className="h-4 w-4 text-gray-400" />}
-            />
+            <div>
+              <InputField
+                label="Request Title"
+                id="title"
+                name="title"
+                type="text"
+                placeholder="e.g., Database Access Request, New Laptop, etc."
+                value={formData.title}
+                onChange={handleChange}
+                required
+                icon={<FileText className="h-4 w-4 text-gray-400" />}
+              />
+              {errors.title && (
+                <p className="mt-1 text-xs text-red-600 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {errors.title}
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Minimum 5 characters, maximum 200 characters
+              </p>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -151,10 +200,18 @@ const CreateRequest = () => {
                 onChange={handleChange}
                 required
                 placeholder="Please provide detailed information about your request..."
-                className="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200 ${
+                  errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
               />
+              {errors.description && (
+                <p className="mt-1 text-xs text-red-600 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {errors.description}
+                </p>
+              )}
               <p className="mt-1 text-xs text-gray-500">
-                Minimum 10 characters. Be as specific as possible.
+                Minimum 20 characters, maximum 5000 characters. Be as specific as possible.
               </p>
             </div>
           </div>
@@ -264,6 +321,19 @@ const CreateRequest = () => {
           </button>
         </div>
       </form>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={showConfirm}
+        title="Confirm Submission"
+        message="Are you sure you want to submit this request? Once submitted, it cannot be edited until reviewed."
+        confirmLabel="Yes, Submit"
+        cancelLabel="Cancel"
+        variant="primary"
+        loading={isSubmitting}
+        onConfirm={handleConfirmSubmit}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 };

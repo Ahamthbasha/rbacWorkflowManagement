@@ -1,12 +1,12 @@
-// components/dashboard/StatCard.tsx
+
 import {type LucideIcon } from 'lucide-react';
 
 interface StatCardProps {
   label: string;
   value: number | string;
   icon: LucideIcon;
-  iconBgColor: string;   // e.g. 'bg-blue-100 dark:bg-blue-900/30'
-  iconColor: string;     // e.g. 'text-blue-600 dark:text-blue-400'
+  iconBgColor: string;  
+  iconColor: string;    
 }
 
 const StatCard = ({ label, value, icon: Icon, iconBgColor, iconColor }: StatCardProps) => (

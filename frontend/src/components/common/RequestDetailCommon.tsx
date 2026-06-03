@@ -1,11 +1,10 @@
-// components/request/RequestDetailCommon.tsx
+
 import React from 'react';
-import { User, Mail, Calendar, Tag, History, FileText, ArrowLeft, X, AlertCircle } from 'lucide-react';
+import { User, Mail, Calendar, History, FileText, ArrowLeft, X, AlertCircle } from 'lucide-react';
 import type { WorkflowRequest, RequestLog } from '../../types/requestTypes';
 import { ICON_MAP, STATUS_COLOR_MAP, PRIORITY_COLOR_MAP, ACTION_ICON_COLOR } from '../../constants/requestConstants';
 import { toSafeString } from '../../utils/requestUtils';
 
-// Simple Components
 export const StatusBadge = ({ display }: { display: { label: string; color: string; iconName: string } }) => {
   const Icon = ICON_MAP[display.iconName] ?? ICON_MAP.Clock;
   return (
@@ -138,7 +137,6 @@ export const RequestInfoGrid = ({ request, additionalInfo = [] }: {
     { icon: <User className="h-4 w-4 text-gray-400" />, label: "Requested by", value: toSafeString(request.user?.name, 'Unknown') },
     { icon: <Mail className="h-4 w-4 text-gray-400" />, label: "Email", value: toSafeString(request.user?.email, 'Unknown') },
     { icon: <Calendar className="h-4 w-4 text-gray-400" />, label: "Submitted on", value: toSafeString(request.submittedAtFormatted ?? request.submittedAt) },
-    ...(request.user?.department ? [{ icon: <Tag className="h-4 w-4 text-gray-400" />, label: "Department", value: toSafeString(request.user.department) }] : []),
     ...additionalInfo
   ];
 

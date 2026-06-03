@@ -1,4 +1,4 @@
-// components/TimelineLog.tsx
+
 import React from "react";
 import type { RequestLog } from "../../types/requestTypes";
 

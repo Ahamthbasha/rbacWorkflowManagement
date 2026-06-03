@@ -1,5 +1,3 @@
-// utils/requestFormatters.ts
-// ─── Shared formatting helpers used across user, manager, and admin controllers ─
 
 import {
   STATUS_CONFIG,
@@ -7,8 +5,6 @@ import {
   CATEGORY_LABELS,
   ACTION_ICON_MAP,
 } from './requestConstants';
-
-// ─── Date ─────────────────────────────────────────────────────────────────────
 
 export const formatIndianDate = (date: Date | string | null): string => {
   if (!date) return 'N/A';
@@ -21,8 +17,6 @@ export const formatIndianDate = (date: Date | string | null): string => {
     hour12: true,
   });
 };
-
-// ─── Action label ─────────────────────────────────────────────────────────────
 
 export const getActionLabel = (
   action: string,
@@ -41,7 +35,6 @@ export const getActionLabel = (
   }
 };
 
-// ─── Log formatter ────────────────────────────────────────────────────────────
 
 export const formatLog = (log: any) => {
   const p = log.toJSON ? log.toJSON() : log;
@@ -66,8 +59,6 @@ export const formatLog = (log: any) => {
       : null,
   };
 };
-
-// ─── Shared base fields for every formatted request ───────────────────────────
 
 export const formatRequestBase = (p: any) => {
   const statusConfig   = STATUS_CONFIG[p.status]     ?? STATUS_CONFIG.submitted;
@@ -95,7 +86,6 @@ export const formatRequestBase = (p: any) => {
       color: priorityConfig.color,
     },
 
-    // Timestamps
     submittedAtFormatted:  formatIndianDate(p.submittedAt),
     createdAtFormatted:    formatIndianDate(p.createdAt),
     approvedAtFormatted:   p.approvedAt  ? formatIndianDate(p.approvedAt)  : null,
@@ -103,15 +93,13 @@ export const formatRequestBase = (p: any) => {
     closedAtFormatted:     p.closedAt    ? formatIndianDate(p.closedAt)    : null,
     reopenedAtFormatted:   p.reopenedAt  ? formatIndianDate(p.reopenedAt)  : null,
 
-    // Content
     comments:               p.comments,
     clarificationRequest:   p.clarificationRequest,
     clarificationResponse:  p.clarificationResponse,
     reopenReason:           p.reopenReason,
 
-    // Relations
     user: p.user
-      ? { id: p.user.id, name: p.user.name, email: p.user.email, department: p.user.department }
+      ? { id: p.user.id, name: p.user.name, email: p.user.email }
       : null,
     manager: p.manager
       ? { id: p.manager.id, name: p.manager.name, email: p.manager.email }
@@ -122,16 +110,12 @@ export const formatRequestBase = (p: any) => {
   };
 };
 
-// ─── Attach sorted logs to a result object ────────────────────────────────────
-
 export const attachLogs = (result: Record<string, any>, logs: any[]) => {
   const sorted = [...logs].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
   result.logs = sorted.map(formatLog);
 };
-
-// ─── Recent-request mini-format (used by dashboard endpoints) ─────────────────
 
 export const formatRecentRequest = (r: any) => {
   const p = r.toJSON ? r.toJSON() : r;

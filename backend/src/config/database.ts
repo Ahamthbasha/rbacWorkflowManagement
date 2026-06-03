@@ -1,4 +1,3 @@
-// config/database.ts
 import { Sequelize } from "sequelize";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
@@ -22,7 +21,7 @@ const getSSLConfig = () => {
         rejectUnauthorized: true,
       };
     } catch (error) {
-      console.error("❌ Failed to read SSL certificate:", error);
+      console.error("Failed to read SSL certificate:", error);
       throw error;
     }
   }
@@ -54,9 +53,11 @@ const sequelize = new Sequelize(
       acquire: 30000,
       idle: 10000,
     },
-    dialectOptions: isProduction ? {
-      ssl: getSSLConfig(),
-    } : {},
+    dialectOptions: isProduction
+      ? {
+          ssl: getSSLConfig(),
+        }
+      : {},
   },
 );
 
@@ -79,9 +80,11 @@ const initDatabase = async () => {
   }
 
   const connection = await mysql.createConnection(connectionConfig);
-  await connection.execute(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
+  await connection.execute(
+    `CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`,
+  );
   await connection.end();
-  console.log("✅ Database ensured");
+  console.log("Database ensured");
 };
 
 const initializeSequelize = async (): Promise<Sequelize> => {
@@ -98,10 +101,10 @@ const initializeSequelize = async (): Promise<Sequelize> => {
 
     try {
       await sequelize.authenticate();
-      console.log("✅ Sequelize connected to MySQL!");
+      console.log("Sequelize connected to MySQL!");
       sequelizeReady = true;
     } catch (error) {
-      console.error("❌ Sequelize connection failed:", error);
+      console.error("Sequelize connection failed:", error);
       throw error;
     }
 
@@ -113,5 +116,6 @@ const initializeSequelize = async (): Promise<Sequelize> => {
 
 initializeSequelize();
 
-export const getSequelize = async (): Promise<Sequelize> => initializeSequelize();
+export const getSequelize = async (): Promise<Sequelize> =>
+  initializeSequelize();
 export { sequelize };

@@ -1,8 +1,7 @@
-// redux/slices/managerSlice.ts
+
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { type IManagerSlice } from "./interface/IManagerSlice";
 
-// Rehydrate from localStorage on app load
 const loadManagerFromStorage = (): IManagerSlice => {
   try {
     const stored = localStorage.getItem("manager");
@@ -13,7 +12,6 @@ const loadManagerFromStorage = (): IManagerSlice => {
         name: parsed.name ?? null,
         email: parsed.email ?? null,
         role: parsed.role ?? null,
-        department: parsed.department ?? null,
         isActive: parsed.isActive ?? null,
       };
     }
@@ -25,7 +23,6 @@ const loadManagerFromStorage = (): IManagerSlice => {
     name: null,
     email: null,
     role: null,
-    department: null,
     isActive: null,
   };
 };
@@ -43,17 +40,15 @@ const managerSlice = createSlice({
         name: string;
         email: string;
         role: string;
-        department?: string;
         isActive?: boolean;
       }>
     ) => {
-      const { _id, name, email, role, department, isActive } = action.payload;
+      const { _id, name, email, role, isActive } = action.payload;
 
       state.managerId = _id;
       state.name = name;
       state.email = email;
       state.role = role;
-      state.department = department ?? null;
       state.isActive = isActive !== undefined ? isActive : true;
 
       localStorage.setItem("manager", JSON.stringify(state));
@@ -64,17 +59,11 @@ const managerSlice = createSlice({
       state.name = null;
       state.email = null;
       state.role = null;
-      state.department = null;
       state.isActive = null;
       localStorage.removeItem("manager");
-    },
-
-    updateManagerDepartment: (state, action: PayloadAction<string>) => {
-      state.department = action.payload;
-      localStorage.setItem("manager", JSON.stringify(state));
     },
   },
 });
 
-export const { setManager, clearManagerDetails, updateManagerDepartment } = managerSlice.actions;
+export const { setManager, clearManagerDetails } = managerSlice.actions;
 export default managerSlice.reducer;

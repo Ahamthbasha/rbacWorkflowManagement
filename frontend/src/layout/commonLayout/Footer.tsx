@@ -1,4 +1,4 @@
-// components/layout/Footer.tsx
+
 import { Shield,  Mail } from "lucide-react";
 
 const Footer = () => {

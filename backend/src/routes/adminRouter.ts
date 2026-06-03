@@ -16,7 +16,6 @@ router.post(
   adminAuthController.login.bind(adminAuthController)
 );
 
-// Protected routes (require authentication and admin role)
 router.use(authMiddleware.authenticate.bind(authMiddleware));
 router.use(authMiddleware.isAdmin.bind(authMiddleware));
 
@@ -30,7 +29,6 @@ router.get(
   adminRequestController.getDashboardStats.bind(adminRequestController)
 );
 
-// Request management
 router.get(
   '/requests',
   adminRequestController.getAllRequests.bind(adminRequestController)
@@ -41,7 +39,6 @@ router.get(
   adminRequestController.getRequestById.bind(adminRequestController)
 );
 
-// Admin actions
 router.put(
   '/requests/:requestId/close',
   adminRequestController.closeRequest.bind(adminRequestController)

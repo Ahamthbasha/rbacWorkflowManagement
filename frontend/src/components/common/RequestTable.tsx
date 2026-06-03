@@ -1,4 +1,4 @@
-// components/common/RequestTable.tsx
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import type { WorkflowRequest } from '../../types/requestTypes';
 
-// Icon map for status badges
 const STATUS_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Clock, CheckCircle, XCircle, AlertCircle,
 };
@@ -20,8 +19,6 @@ interface FilterOptions {
   startDate?: string;
   endDate?: string;
 }
-
-// Define the fallback status config type
 interface StatusFallbackConfig {
   icon: React.ComponentType<{ className?: string }>;
   color: string;
@@ -77,7 +74,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<FilterOptions>({});
 
-  // Color maps
   const statusColorMap: Record<string, string> = {
     yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
     blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -95,7 +91,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
     red: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   };
 
-  // Fallback configurations
   const fallbackStatusConfig: Record<string, StatusFallbackConfig> = {
     submitted: { icon: Clock, color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', label: 'Submitted' },
     pending: { icon: Clock, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', label: 'Pending' },
@@ -114,7 +109,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
     urgent: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', label: 'Urgent' },
   };
 
-  // Use backend's pre-formatted status display
   const getStatusBadgeFromDisplay = (request: WorkflowRequest): React.ReactNode => {
     if (request.statusDisplay) {
       const { label, color, iconName } = request.statusDisplay;
@@ -129,7 +123,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
       );
     }
     
-    // Fallback for older data
     const fallback = fallbackStatusConfig[request.status] || fallbackStatusConfig.submitted;
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${fallback.color}`}>
@@ -139,7 +132,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
     );
   };
 
-  // Use backend's pre-formatted priority display
   const getPriorityBadgeFromDisplay = (request: WorkflowRequest): React.ReactNode => {
     if (request.priorityDisplay) {
       const { label, color } = request.priorityDisplay;
@@ -151,7 +143,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
       );
     }
     
-    // Fallback for older data
     const fallback = fallbackPriorityConfig[request.priority] || fallbackPriorityConfig.medium;
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${fallback.color}`}>
@@ -160,7 +151,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
     );
   };
 
-  // Use backend's pre-formatted category label
   const getCategoryBadge = (request: WorkflowRequest): React.ReactNode => {
     const categoryLabel = request.categoryLabel || request.category;
     const displayLabel = typeof categoryLabel === 'string' 
@@ -173,7 +163,6 @@ const RequestTable: React.FC<RequestTableProps> = ({
     );
   };
 
-  // Use backend's pre-formatted date
   const getFormattedDate = (request: WorkflowRequest): string => {
     return request.submittedAtFormatted || new Date(request.submittedAt).toLocaleDateString();
   };

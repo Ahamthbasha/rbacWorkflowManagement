@@ -1,4 +1,4 @@
-// api/auth/managerAuth.ts
+
 import { API } from "../../services/axios"; 
 import managerEndpoints from "../../endpoints/managerEndpoint";
 
@@ -11,7 +11,6 @@ export interface ManagerRegisterRequest {
   name: string;
   email: string;
   password: string;
-  department: string;
 }
 
 export interface ManagerLoginResponse {
@@ -24,7 +23,6 @@ export interface ManagerLoginResponse {
       email: string;
       role: string;
       isActive: boolean;
-      department: string;
       createdAt?: string;
     };
   };
@@ -39,7 +37,6 @@ export interface ManagerRegisterResponse {
       name: string;
       email: string;
       role: string;
-      department: string;
     };
   };
 }
@@ -52,7 +49,6 @@ export interface ManagerProfileResponse {
     email: string;
     role: string;
     isActive: boolean;
-    department: string;
     createdAt: string;
   };
 }
@@ -87,25 +83,21 @@ export interface ClarifyRequestData {
   question: string;
 }
 
-// Manager Login
 export const managerLogin = async (data: ManagerLoginRequest): Promise<ManagerLoginResponse> => {
   const response = await API.post(managerEndpoints.managerLogin, data);
   return response.data;
 };
 
-// Manager Register
 export const managerRegister = async (data: ManagerRegisterRequest): Promise<ManagerRegisterResponse> => {
   const response = await API.post(managerEndpoints.managerRegister, data);
   return response.data;
 };
 
-// Manager Logout
 export const managerLogout = async (): Promise<{ success: boolean; message: string }> => {
   const response = await API.post(managerEndpoints.managerLogout);
   return response.data;
 };
 
-// Export all functions as a grouped object
 const managerAuth = {
   login: managerLogin,
   register: managerRegister,

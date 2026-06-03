@@ -1,4 +1,3 @@
-// models/requestModel.ts
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
 import User from "./userModel";
@@ -200,25 +199,9 @@ Request.init(
     modelName: "Request",
     tableName: "requests",
     timestamps: true,
-    hooks: {
-      beforeCreate: async (request: any) => {
-        if (request.userId) {
-          const user = await User.findByPk(request.userId);
-          if (user && user.department) {
-            const manager = await User.findOne({
-              where: { department: user.department, role: "manager" },
-            });
-            if (manager) {
-              request.managerId = manager.id;
-            }
-          }
-        }
-      },
-    },
   },
 );
 
-// Associations
 Request.belongsTo(User, { as: "user", foreignKey: "userId" });
 Request.belongsTo(User, { as: "manager", foreignKey: "managerId" });
 Request.belongsTo(User, { as: "admin", foreignKey: "adminId" });

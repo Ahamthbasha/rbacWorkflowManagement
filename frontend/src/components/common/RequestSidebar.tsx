@@ -56,16 +56,6 @@ export const RequestSidebar: React.FC<RequestSidebarProps> = ({
               </p>
             </div>
           </div>
-          {request.user?.department && (
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-              <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">
-                Department
-              </span>
-              <span className="text-xs text-slate-600 dark:text-slate-300">
-                {request.user.department}
-              </span>
-            </div>
-          )}
         </div>
       </SectionCard>
     )}

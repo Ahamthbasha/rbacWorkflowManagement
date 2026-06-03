@@ -1,4 +1,4 @@
-// components/InfoField.tsx
+
 import React from "react";
 
 interface InfoFieldProps {

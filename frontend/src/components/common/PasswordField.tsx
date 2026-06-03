@@ -1,11 +1,11 @@
-// components/common/PasswordField.tsx
+
 import { forwardRef, useState, type InputHTMLAttributes } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 interface PasswordFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
-  icon?: React.ReactNode; // Add icon prop
+  icon?: React.ReactNode;
 }
 
 const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(

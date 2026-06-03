@@ -23,7 +23,6 @@ router.post(
   managerAuthController.login.bind(managerAuthController)
 );
 
-// Protected routes (require authentication and manager role)
 router.use(authMiddleware.authenticate.bind(authMiddleware));
 router.use(authMiddleware.isManager.bind(authMiddleware));
 
@@ -33,17 +32,10 @@ router.post(
 );
 
 router.get(
-  '/me',
-  managerAuthController.getCurrentManager.bind(managerAuthController)
-);
-
-// Dashboard
-router.get(
   '/dashboard/stats',
   managerRequestController.getDashboardStats.bind(managerRequestController)
 );
 
-// Request management
 router.get(
   '/requests',
   managerRequestController.getAllRequests.bind(managerRequestController)
@@ -64,7 +56,6 @@ router.get(
   managerRequestController.getRequestLogs.bind(managerRequestController)
 );
 
-// Actions
 router.put(
   '/requests/:requestId/approve',
   managerRequestController.approveRequest.bind(managerRequestController)

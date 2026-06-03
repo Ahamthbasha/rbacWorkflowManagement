@@ -1,4 +1,4 @@
-// types/requestTypes.ts
+
 export type RequestStatus = 
   | 'submitted'
   | 'pending'
@@ -23,7 +23,6 @@ export type RequestCategory =
   | 'budget'
   | 'other';
 
-// Display types for backend computed values
 export interface StatusDisplay {
   label: string;
   color: string;
@@ -35,23 +34,18 @@ export interface PriorityDisplay {
   color: string;
 }
 
-// Admin action buttons
 export interface AdminActionButtons {
   canClose: boolean;
   canReopen: boolean;
 }
 
-// Manager action buttons
 export interface ManagerActionButtons {
   canApprove: boolean;
   canReject: boolean;
   canClarify: boolean;
 }
 
-// Union type for actions
 export type ActionButtons = AdminActionButtons | ManagerActionButtons;
-
-// Dashboard Stats - Match backend response structure
 export interface DashboardStats {
   counts: {
     total: number;
@@ -112,7 +106,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  department?: string;
 }
 
 export interface Manager {

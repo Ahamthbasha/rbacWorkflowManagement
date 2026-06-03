@@ -1,4 +1,3 @@
-
 import { QueryInterface, DataTypes } from 'sequelize';
 
 module.exports = {
@@ -26,10 +25,6 @@ module.exports = {
         type: Sequelize.ENUM('user', 'manager', 'admin'),
         defaultValue: 'user',
         allowNull: false,
-      },
-      department: {
-        type: Sequelize.STRING(50),
-        allowNull: true,
       },
       isActive: {
         type: Sequelize.BOOLEAN,

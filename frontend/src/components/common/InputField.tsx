@@ -1,10 +1,10 @@
-// components/common/InputField.tsx
+
 import { type InputHTMLAttributes, forwardRef } from "react";
 
 interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
-  icon?: React.ReactNode; // Add icon prop
+  icon?: React.ReactNode; 
 }
 
 const InputField = forwardRef<HTMLInputElement, InputFieldProps>(

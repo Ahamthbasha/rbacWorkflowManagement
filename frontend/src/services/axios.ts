@@ -14,32 +14,94 @@ export const API: AxiosInstance = axios.create({
   timeout: 10000,
 });
 
+let toastShown = false;
+let toastTimeout: number | undefined;
+
+let isRedirecting = false;
+
+interface ErrorResponse {
+  success?: boolean;
+  message?: string;
+  errors?: Array<{ msg: string; path: string }>;
+}
+
+let interceptorId: number | null = null;
+
 export const configureAxiosInterceptors = (
   dispatch: Dispatch<AnyAction>,
   navigate: NavigateFunction
 ) => {
+  if (interceptorId !== null) {
+    API.interceptors.response.eject(interceptorId);
+  }
 
-
-
-  API.interceptors.response.use(
+  interceptorId = API.interceptors.response.use(
     (response) => response, 
-
-    (error: AxiosError) => {
+    (error: AxiosError<ErrorResponse>) => {
       if (error.response?.status === 401) {
+        
+        const isLoginPage = window.location.pathname === '/login' || 
+                           window.location.pathname === '/admin/login' ||
+                           window.location.pathname === '/manager/login';
+        
+        if (isLoginPage) {
+          return Promise.reject(error);
+        }
+        
+        if (isRedirecting) {
+          return Promise.reject(error);
+        }
+        
+        isRedirecting = true;
+        
         dispatch(clearUserDetails());
+        
+        if (!toastShown) {
+          toastShown = true;
+          toast.error(error.response?.data?.message || "Session expired. Please login again.");
+          toastTimeout = setTimeout(() => {
+            toastShown = false;
+          }, 3000) as unknown as number;
+        }
+        
         const currentPath = window.location.pathname;
         const isAdminRoute = currentPath.startsWith('/admin');
+        const isManagerRoute = currentPath.startsWith('/manager');
         
-        if (isAdminRoute) {
-          navigate("/admin/login");
-        } else {
-          navigate("/login");
-        }
-        navigate("/login");
+        setTimeout(() => {
+          if (isAdminRoute) {
+            navigate("/admin/login");
+          } else if (isManagerRoute) {
+            navigate("/manager/login");
+          } else {
+            navigate("/login");
+          }
+          setTimeout(() => {
+            isRedirecting = false;
+          }, 1000);
+        }, 100);
+        
+        return Promise.reject(error);
       }
 
-      if (error.response?.status === 500) {
+      if (error.response?.status === 403) {
+        if (!toastShown) {
+          toastShown = true;
+          toast.error(error.response?.data?.message || "Access denied. You don't have permission.");
+          toastTimeout = setTimeout(() => {
+            toastShown = false;
+          }, 2000) as unknown as number;
+        }
+        return Promise.reject(error);
+      }
+      if (error.response?.status === 500 && !toastShown) {
+        toastShown = true;
         toast.error("Server error. Please try again later.");
+        
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+          toastShown = false;
+        }, 2000) as unknown as number;
       }
 
       return Promise.reject(error);

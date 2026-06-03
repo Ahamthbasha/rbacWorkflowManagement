@@ -1,17 +1,15 @@
-// components/request/requestConstants.ts
+
 import {
   Clock, CheckCircle, XCircle, AlertCircle, Tag, MessageSquare, History,
   FileText, Send, RefreshCw
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 
-// Icon map
 export const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   Clock, CheckCircle, XCircle, AlertCircle, RefreshCw,
   FileText, Tag, MessageSquare, Send, History,
 };
 
-// Color maps
 export const STATUS_COLOR_MAP: Record<string, string> = {
   yellow: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
   blue: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',

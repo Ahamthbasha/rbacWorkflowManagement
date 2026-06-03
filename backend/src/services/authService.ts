@@ -1,6 +1,6 @@
-// services/authService.ts
+
 import User, { UserRole } from "../models/userModel";
-import { JwtService, IRegistrationPayload, ITokenPair } from "./jwtService";
+import { JwtService, ITokenPair } from "./jwtService";
 import AppError from "../utils/appError";
 import { Op } from "sequelize";
 
@@ -30,53 +30,76 @@ export interface IManagerRegisterDTO {
   name: string;
   email: string;
   password: string;
-  department?: string;
 }
 
 export class AuthService {
   constructor(private jwtService: JwtService) {}
 
-  // Direct registration without OTP
-  async register(data: IRegisterDTO): Promise<IAuthResponse> {
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      where: { email: data.email },
-    });
+  private validatePasswordStrength(password: string): void {
+  const errors = [];
+  
+  if (password.length < 6) {
+    errors.push('Password must be at least 6 characters long');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  if (!/\d/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+  if (!/[@$!%*?&]/.test(password)) {
+    errors.push('Password must contain at least one special character (@$!%*?&)');
+  }
+  
+  if (errors.length > 0) {
+    throw new AppError(errors.join('. '), 400);
+  }
+}
 
-    if (existingUser) {
-      throw new AppError("User with this email already exists", 409);
-    }
+async register(data: IRegisterDTO): Promise<void> {
+  if (!data.name || data.name.trim().length < 5) {
+    throw new AppError('Name must be at least 5 characters long', 400);
+  }
+  
+  const nameParts = data.name.trim().split(/\s+/);
+  
+  if (!/^[A-Za-z\s]+$/.test(data.name)) {
+    throw new AppError('Name can only contain letters and spaces', 400);
+  }
+  
+  if (data.name.includes('  ')) {
+    throw new AppError('Name cannot have multiple consecutive spaces', 400);
+  }
+  
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(data.email)) {
+    throw new AppError('Please provide a valid professional email address', 400);
+  }
+  
+  this.validatePasswordStrength(data.password);
+  
+  const existingUser = await User.findOne({
+    where: { email: data.email },
+  });
 
-    // Create user directly
-    const user = await User.create({
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      isActive: true, // User is active immediately
-      isVerified: true, // Mark as verified since no OTP needed
-      role: UserRole.USER, // Default role is USER
-    });
-
-    // Generate tokens
-    const tokens = this.jwtService.generateTokenPair({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-      },
-      tokens,
-    };
+  if (existingUser) {
+    throw new AppError("User with this email already exists", 409);
   }
 
-  // Login user
+  await User.create({
+    name: data.name.trim(),
+    email: data.email.toLowerCase().trim(),
+    password: data.password,
+    isActive: true,
+    isVerified: true,
+    role: UserRole.USER,
+  });
+  
+}
+
   async login(data: ILoginDTO): Promise<IAuthResponse> {
     const user = await User.findOne({
       where: { email: data.email },
@@ -87,7 +110,6 @@ export class AuthService {
       throw new AppError("Invalid email or password", 401);
     }
 
-    // Check if user is active
     if (!user.isActive) {
       throw new AppError(
         "Your account is deactivated. Please contact admin.",
@@ -95,13 +117,11 @@ export class AuthService {
       );
     }
 
-    // Verify password
     const isPasswordValid = await user.comparePassword(data.password);
     if (!isPasswordValid) {
       throw new AppError("Invalid email or password", 401);
     }
 
-    // Generate tokens
     const tokens = this.jwtService.generateTokenPair({
       userId: user.id,
       email: user.email,
@@ -120,7 +140,6 @@ export class AuthService {
     };
   }
 
-  // Get current user
   async getCurrentUser(userId: string): Promise<User> {
     const user = await User.findByPk(userId);
 
@@ -131,7 +150,6 @@ export class AuthService {
     return user;
   }
 
-  // Refresh token
   async refreshToken(userId: string): Promise<ITokenPair> {
     const user = await User.findByPk(userId);
 
@@ -148,61 +166,38 @@ export class AuthService {
     return tokens;
   }
 
-  // Search users
-  async searchUsers(
-    query: string,
-    excludeUserId: string,
-  ): Promise<Partial<User>[]> {
-    if (!query || query.length < 2) return [];
-
-    const users = await User.findAll({
-      where: {
-        id: { [Op.ne]: excludeUserId },
-        isActive: true,
-        [Op.or]: [
-          { name: { [Op.like]: `%${query}%` } },
-          { email: { [Op.like]: `%${query}%` } },
-        ],
-      },
-      attributes: ["id", "name", "email", "role"],
-      limit: 10,
-    });
-
-    return users;
-  }
-
-  // Get all active users
-  async getAllActiveUsers(excludeUserId: string): Promise<Partial<User>[]> {
-    const users = await User.findAll({
-      where: {
-        id: { [Op.ne]: excludeUserId },
-        isActive: true,
-      },
-      attributes: ["id", "name", "email", "role"],
-      limit: 50,
-    });
-
-    return users;
-  }
-
   async findUserByEmail(email: string): Promise<User | null> {
     return await User.findOne({ where: { email } });
   }
 
-  // Add this method to register manager
   async registerManager(data: IManagerRegisterDTO): Promise<User> {
-    const user = await User.create({
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      department: data.department || null,
-      isActive: true,
-      isVerified: true,
-      role: UserRole.MANAGER,
-    });
-
-    return user;
+  // Validate name
+  if (!data.name || data.name.trim().length < 5) {
+    throw new AppError('Name must be at least 5 characters long', 400);
   }
+  
+  // Check for full name
+  const nameParts = data.name.trim().split(/\s+/);
+  // Validate email format
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(data.email)) {
+    throw new AppError('Please provide a valid professional email address', 400);
+  }
+  
+  // Validate password strength
+  this.validatePasswordStrength(data.password);
+  
+  const user = await User.create({
+    name: data.name.trim(),
+    email: data.email.toLowerCase().trim(),
+    password: data.password,
+    isActive: true,
+    isVerified: true,
+    role: UserRole.MANAGER,
+  });
+
+  return user;
+}
 
   // Add this method to generate tokens for a user
   generateUserTokens(user: User): ITokenPair {

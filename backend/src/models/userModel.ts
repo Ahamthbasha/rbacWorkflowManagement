@@ -1,4 +1,3 @@
-// models/User.ts
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../config/database";
 import bcrypt from "bcryptjs";
@@ -9,10 +8,9 @@ export enum UserRole {
   ADMIN = "admin",
 }
 
-// Define creation attributes (fields needed when creating a user)
 interface UserCreationAttributes extends Optional<
   UserAttributes,
-  "id" | "createdAt" | "updatedAt" | "isActive" | "isVerified" | "department"
+  "id" | "createdAt" | "updatedAt" | "isActive" | "isVerified"
 > {}
 
 interface UserAttributes {
@@ -23,7 +21,6 @@ interface UserAttributes {
   role: UserRole;
   isActive: boolean;
   isVerified: boolean;
-  department: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,7 +36,6 @@ class User
   public role!: UserRole;
   public isActive!: boolean;
   public isVerified!: boolean;
-  public department!: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -75,10 +71,6 @@ User.init(
       type: DataTypes.ENUM(...Object.values(UserRole)),
       defaultValue: UserRole.USER,
       allowNull: false,
-    },
-    department: {
-      type: DataTypes.STRING(50),
-      allowNull: true,
     },
     isActive: {
       type: DataTypes.BOOLEAN,

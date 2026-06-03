@@ -1,4 +1,3 @@
-// pages/user/Auth/Login.tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,9 +6,9 @@ import { toast } from "react-toastify";
 import { type AxiosError } from "axios";
 import { useDispatch } from "react-redux";
 import { Mail, Lock, Shield, LogIn } from "lucide-react";
-import InputField from "../../../components/common/InputField"; 
-import PasswordField from "../../../components/common/PasswordField"; 
-import { login } from "../../../api/auth/userAuth" 
+import InputField from "../../../components/common/InputField";
+import PasswordField from "../../../components/common/PasswordField";
+import { login } from "../../../api/auth/userAuth";
 import { setUser } from "../../../redux/slices/userSlice";
 
 const loginSchema = z.object({
@@ -48,46 +47,65 @@ export default function Login() {
 
       if (res.success) {
         const { user } = res.data;
-        
+
         dispatch(
           setUser({
             _id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
-          })
+          }),
         );
-        
+
         toast.success(`Welcome back, ${user.name}!`);
-        
+
         // Redirect based on role
-        if (user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (user.role === 'manager') {
-          navigate('/manager/requests');
+        if (user.role === "admin") {
+          navigate("/admin/dashboard");
+        } else if (user.role === "manager") {
+          navigate("/manager/requests");
         } else {
-          navigate('/myRequests');
+          navigate("/myRequests");
         }
       }
     } catch (error: unknown) {
       const err = error as AxiosError<ErrorResponse>;
 
+      // REMOVED: Don't skip 401 errors - let them be handled below
+      // The interceptor only handles redirects, not toasts for login page
+
+      // Handle all errors uniformly
       if (err.response?.data) {
         const responseData = err.response.data;
 
-        if (responseData.errors && Array.isArray(responseData.errors)) {
-          responseData.errors.forEach((validationErr, index) => {
-            toast.error(validationErr.msg, {
-              toastId: `error-${validationErr.path}-${index}`,
-            });
-          });
-        } else if (responseData.message) {
+        // Handle validation errors
+        if (
+          responseData.errors &&
+          Array.isArray(responseData.errors) &&
+          responseData.errors.length > 0
+        ) {
+          // Show only first validation error to avoid multiple toasts
+          const firstError = responseData.errors[0];
+          toast.error(firstError.msg);
+        }
+        // Handle single message error (this will catch "Invalid email or password")
+        else if (responseData.message) {
           toast.error(responseData.message);
-        } else {
+        }
+        // Fallback error message
+        else {
           toast.error("Login failed. Please try again.");
         }
-      } else {
-        toast.error("Network error. Please check your connection and try again.");
+      }
+      // Handle network errors
+      else if (err.code === "ECONNABORTED") {
+        toast.error("Request timeout. Please try again.");
+      } else if (err.message === "Network Error") {
+        toast.error("Network error. Please check your connection.");
+      }
+      // Handle any other unexpected errors
+      else {
+        toast.error("An unexpected error occurred. Please try again.");
       }
     }
   };
@@ -97,7 +115,6 @@ export default function Login() {
       <div className="max-w-md w-full">
         {/* Main Card */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 sm:p-10 border border-gray-200 dark:border-gray-700">
-          
           {/* Logo & Title Section */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
@@ -159,9 +176,25 @@ export default function Login() {
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Signing in...
                 </>
@@ -178,8 +211,8 @@ export default function Login() {
           <div className="mt-8 text-center">
             <p className="text-gray-600 dark:text-gray-400">
               Don't have an account?{" "}
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
               >
                 Create Account

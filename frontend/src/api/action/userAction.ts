@@ -49,7 +49,6 @@ export const getRequestById = async (
   return response.data;
 };
 
-// Edit rejected request fields AND resubmit in one call
 export const editAndResubmitRequest = async (
   requestId: string,
   data: Partial<CreateRequestData>
@@ -98,7 +97,6 @@ export interface UserDashboardStats {
   }>;
 }
 
-// ✅ fixed
 export const getUserDashboardStats = async (): Promise<ApiResponse<UserDashboardStats>> => {
   const response = await API.get(userRouterEndPoints.userDashboard);
   return response.data;

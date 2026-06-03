@@ -1,4 +1,4 @@
-// router/managerRouter.tsx
+
 import { Routes, Route } from "react-router-dom";
 import ManagerSessionRoute from "../protecter/managerProtecter/ManagerSessionRoute";
 import ManagerPrivateRoute from "../protecter/managerProtecter/ManagerPrivateRoute";
@@ -14,7 +14,7 @@ import ManagerDashboard from "../pages/manager/Request/ManagerDashboard";
 const ManagerRouter = () => {
   return (
     <Routes>
-      {/* Public routes - accessible only when NOT logged in */}
+     
       <Route
         path="/login"
         element={
@@ -32,7 +32,7 @@ const ManagerRouter = () => {
         }
       />
 
-      {/* Protected routes - accessible only when logged in */}
+     
       <Route element={<ManagerPrivateRoute />}>
         <Route element={<ManagerLayout/>}>
         <Route path="dashboard" element={<ManagerDashboard/>}/>

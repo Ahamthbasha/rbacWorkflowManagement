@@ -1,4 +1,4 @@
-// components/StatusBadge.tsx
+
 import React from "react";
 
 type StatusColor =
@@ -13,7 +13,6 @@ type StatusColor =
 interface StatusBadgeProps {
   label: string;
   color?: StatusColor;
-  /** If provided, overrides `color` with the raw hex/CSS string from the API */
   apiColor?: string;
   size?: "sm" | "md";
   dot?: boolean;

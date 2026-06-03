@@ -1,7 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { type UserSlice } from "./interface/IUserSlice";
 
-// ✅ Rehydrate from localStorage on app load
 const loadUserFromStorage = (): UserSlice => {
   try {
     const stored = localStorage.getItem("user");
@@ -14,7 +13,7 @@ const loadUserFromStorage = (): UserSlice => {
   return { userId: null, name: null, email: null, role: null };
 };
 
-const initialState: UserSlice = loadUserFromStorage(); // ✅ was hardcoded nulls
+const initialState: UserSlice = loadUserFromStorage();
 
 const userSlice = createSlice({
   name: "user",

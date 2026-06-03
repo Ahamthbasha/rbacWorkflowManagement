@@ -1,4 +1,3 @@
-// pages/manager/Auth/Login.tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -22,6 +21,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 interface ErrorResponse {
   success: boolean;
   message?: string;
+  errors?: Array<{ msg: string; path: string }>;
 }
 
 export default function ManagerLogin() {
@@ -48,17 +48,33 @@ export default function ManagerLogin() {
             name: res.data.user.name,
             email: res.data.user.email,
             role: res.data.user.role,
-            department: res.data.user.department,
             isActive: res.data.user.isActive,
           })
         );
         
         toast.success(`Welcome back, ${res.data.user.name}!`);
-        navigate("/manager/request");
+        navigate("/manager/requests");
       }
     } catch (error: unknown) {
       const err = error as AxiosError<ErrorResponse>;
-      toast.error(err.response?.data?.message || "Login failed. Please try again.");
+      
+      if (err.response?.data) {
+        const responseData = err.response.data;
+        
+        if (responseData.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+          toast.error(responseData.errors[0].msg);
+        } else if (responseData.message) {
+          toast.error(responseData.message);
+        } else {
+          toast.error("Login failed. Please try again.");
+        }
+      } else if (err.code === "ECONNABORTED") {
+        toast.error("Request timeout. Please try again.");
+      } else if (err.message === "Network Error") {
+        toast.error("Network error. Please check your connection.");
+      } else {
+        toast.error("Login failed. Please try again.");
+      }
     }
   };
 
@@ -153,7 +169,7 @@ export default function ManagerLogin() {
 
           <div className="mt-4 text-center">
             <Link 
-              to="/manager/login" 
+              to="/login" 
               className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
             >
               ← Back to User Login

@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import cors from 'cors';
 import { getSequelize } from "./config/database";
+import errorHandler from './middlewares/errorHandler';
 
 import userRouter from './routes/userRouter';
 import adminRouter from './routes/adminRouter';
@@ -18,7 +19,6 @@ const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// CORS configuration
 const corsOptions = {
     origin: FRONTEND_URL,
     credentials: true,
@@ -28,27 +28,24 @@ const corsOptions = {
     optionsSuccessStatus: 200
 };
 
-// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Morgan logging middleware
 if (NODE_ENV === 'production') {
     app.use(morgan('combined'));
 } else {
     app.use(morgan('dev'));
 }
 
-// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Routes
 app.use('/api/user', userRouter);
 app.use('/api/manager', managerRouter);
 app.use('/api/admin', adminRouter);
 
-// Health check endpoint
+app.use(errorHandler)
+
 app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'healthy', 
@@ -59,7 +56,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// 404 handler
 app.use((req, res) => {
     res.status(404).json({ 
         success: false, 
@@ -67,7 +63,6 @@ app.use((req, res) => {
     });
 });
 
-// Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Error:', err);
     res.status(err.status || 500).json({
@@ -77,42 +72,40 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     });
 });
 
-// Function to initialize database with retries
 const initializeDatabase = async (retries = 5, delay = 5000) => {
     for (let i = 0; i < retries; i++) {
         try {
-            console.log(`📦 Initializing database (attempt ${i + 1}/${retries})...`);
+            console.log(`Initializing database (attempt ${i + 1}/${retries})...`);
             
             // Get sequelize connection
             const sequelize = await getSequelize();
             
             // Run migrations in production
             if (NODE_ENV === 'production') {
-                console.log('🔄 Running database migrations in production...');
+                console.log('Running database migrations in production...');
                 await runMigrations();
-                console.log('✅ Migrations completed successfully');
+                console.log('Migrations completed successfully');
             } else if (NODE_ENV === 'development') {
-                console.log('🔄 Running database migrations in development...');
+                console.log('Running database migrations in development...');
                 await runMigrations();
-                console.log('✅ Migrations completed successfully');
+                console.log('Migrations completed successfully');
             }
             
-            console.log('✅ Database connected and ready');
+            console.log('Database connected and ready');
             
-            // Initialize admin user
             await AdminAuthController.initializeAdmin();
-            console.log('✅ Admin user initialized');
+            console.log('Admin user initialized');
             
             return true;
         } catch (error) {
-            console.error(`❌ Database initialization attempt ${i + 1} failed:`, error);
+            console.error(`Database initialization attempt ${i + 1} failed:`, error);
             
             if (i < retries - 1) {
-                console.log(`⏳ Waiting ${delay}ms before retry...`);
+                console.log(`Waiting ${delay}ms before retry...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else {
-                console.error('❌ All database initialization attempts failed');
-                // Don't throw - let the app start but with limited functionality
+                console.error('All database initialization attempts failed');
+                
                 return false;
             }
         }
@@ -120,45 +113,44 @@ const initializeDatabase = async (retries = 5, delay = 5000) => {
     return false;
 };
 
-// Start server
 const startServer = async () => {
     try {
         // Initialize database (don't block server startup)
         initializeDatabase().then(success => {
             if (success) {
-                console.log('🎉 Database ready for requests');
+                console.log('Database ready for requests');
             } else {
-                console.warn('⚠️ Database initialization failed - some endpoints may not work');
+                console.warn('Database initialization failed - some endpoints may not work');
             }
         });
         
         // Start listening immediately
         const server = app.listen(PORT, () => {
-            console.log(`🚀 Server listening on port ${PORT}`);
-            console.log(`📝 Environment: ${NODE_ENV}`);
-            console.log(`🔗 CORS enabled for: ${FRONTEND_URL}`);
-            console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+            console.log(`Server listening on port ${PORT}`);
+            console.log(`Environment: ${NODE_ENV}`);
+            console.log(`CORS enabled for: ${FRONTEND_URL}`);
+            console.log(`Health check: http://localhost:${PORT}/health`);
         });
         
         // Graceful shutdown
         const gracefulShutdown = async () => {
-            console.log('🛑 Received shutdown signal, closing gracefully...');
+            console.log('Received shutdown signal, closing gracefully...');
             server.close(async () => {
-                console.log('📦 HTTP server closed');
+                console.log('HTTP server closed');
                 try {
                     const sequelize = await getSequelize();
                     await sequelize.close();
-                    console.log('✅ Database connection closed');
+                    console.log('Database connection closed');
                     process.exit(0);
                 } catch (error) {
-                    console.error('❌ Error closing database:', error);
+                    console.error('Error closing database:', error);
                     process.exit(1);
                 }
             });
             
             // Force close after 10 seconds
             setTimeout(() => {
-                console.error('⚠️ Could not close connections in time, forcefully shutting down');
+                console.error('Could not close connections in time, forcefully shutting down');
                 process.exit(1);
             }, 10000);
         };
@@ -167,12 +159,11 @@ const startServer = async () => {
         process.on('SIGINT', gracefulShutdown);
         
     } catch (error) {
-        console.error('❌ Failed to start server:', error);
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
 };
 
-// Start the application
 startServer();
 
 export default app;

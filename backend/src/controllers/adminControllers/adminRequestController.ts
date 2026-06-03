@@ -1,4 +1,3 @@
-// controllers/adminControllers/adminRequestController.ts
 import { Response, NextFunction } from "express";
 import { Op } from "sequelize";
 import { AuthRequest } from "../../middlewares/authMiddleware";
@@ -6,18 +5,11 @@ import RequestModel, { RequestStatus } from "../../models/requestModel";
 import RequestLogModel, { ActionType } from "../../models/requestLogModel";
 import User from "../../models/userModel";
 import AppError from "../../utils/appError";
-import {
-  formatLog,
-  formatRequestBase,
-  attachLogs,
-  formatRecentRequest,
-} from "../../utils/requestFormatters";
+import { formatRequestBase, attachLogs } from "../../utils/requestFormatters";
 import DashboardService from "../../services/DashboardService";
 
 const Request = RequestModel;
 const RequestLog = RequestLogModel;
-
-// ─── Formatters ───────────────────────────────────────────────────────────────
 
 const formatRequest = (request: any, includeLogs = false) => {
   const p = request.toJSON ? request.toJSON() : request;
@@ -36,14 +28,12 @@ const formatRequest = (request: any, includeLogs = false) => {
   return result;
 };
 
-// ─── Controller ───────────────────────────────────────────────────────────────
-
 export class AdminRequestController {
   private dashboardService: DashboardService;
   constructor(dashboardService: DashboardService) {
     this.dashboardService = dashboardService;
   }
-  // GET /admin/requests
+
   getAllRequests = async (
     req: AuthRequest,
     res: Response,
@@ -95,7 +85,7 @@ export class AdminRequestController {
           {
             model: User,
             as: "user",
-            attributes: ["id", "name", "email", "department"],
+            attributes: ["id", "name", "email"],
           },
           { model: User, as: "manager", attributes: ["id", "name", "email"] },
         ],
@@ -120,7 +110,6 @@ export class AdminRequestController {
     }
   };
 
-  // GET /admin/requests/:requestId
   getRequestById = async (
     req: AuthRequest,
     res: Response,
@@ -153,7 +142,7 @@ export class AdminRequestController {
           {
             model: User,
             as: "user",
-            attributes: ["id", "name", "email", "department"],
+            attributes: ["id", "name", "email"],
           },
           { model: User, as: "manager", attributes: ["id", "name", "email"] },
           { model: User, as: "admin", attributes: ["id", "name", "email"] },
@@ -192,7 +181,6 @@ export class AdminRequestController {
     }
   };
 
-  // PATCH /admin/requests/:requestId/close
   closeRequest = async (
     req: AuthRequest,
     res: Response,
@@ -239,7 +227,6 @@ export class AdminRequestController {
     }
   };
 
-  // PATCH /admin/requests/:requestId/reopen
   reopenRequest = async (
     req: AuthRequest,
     res: Response,
@@ -295,7 +282,6 @@ export class AdminRequestController {
     }
   };
 
-  // GET /admin/dashboard
   getDashboardStats = async (
     req: AuthRequest,
     res: Response,

@@ -1,4 +1,4 @@
-// layout/managerLayout/ManagerLayout.tsx
+
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link, NavLink, Outlet } from 'react-router-dom';

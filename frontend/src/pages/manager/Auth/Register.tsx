@@ -1,5 +1,4 @@
-// pages/manager/Auth/Register.tsx
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,19 +8,39 @@ import { useState } from "react";
 import InputField from "../../../components/common/InputField"; 
 import PasswordField from "../../../components/common/PasswordField"; 
 import { managerRegister } from "../../../api/auth/managerAuth";
-import { Building2, Shield, Sparkles, Mail, Lock, User, Briefcase } from "lucide-react";
+import { Building2, Shield, Sparkles, Mail, Lock, User, CheckCircle, XCircle } from "lucide-react";
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email"),
-    department: z.string().min(2, "Department is required"),
+    name: z
+      .string()
+      .min(5, "Name must be at least 5 characters")
+      .max(50, "Name must not exceed 50 characters")
+      .regex(/^[A-Za-z\s]+$/, "Name can only contain letters and spaces")
+      .refine((val) => val.trim().length === val.length, {
+        message: "Name cannot have leading or trailing spaces",
+      })
+      .refine((val) => !val.includes("  "), {
+        message: "Name cannot have multiple consecutive spaces",
+      }),
+    
+    email: z
+      .string()
+      .email("Please enter a valid email address")
+      .regex(
+        /^[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/,
+        "Please provide a professional email address"
+      )
+      .transform((val) => val.toLowerCase().trim()),
+    
     password: z
       .string()
       .min(6, "Password must be at least 6 characters")
       .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
       .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
+      .regex(/[0-9]/, "Password must contain at least one number")
+      .regex(/[@$!%*?&]/, "Password must contain at least one special character (@$!%*?&)"),
+    
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -45,19 +64,33 @@ export default function ManagerRegister() {
     register,
     handleSubmit,
     formState: { errors },
+    control, // ← needed for useWatch
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
+    mode: "onChange",
   });
+
+  // ✅ useWatch is memoization-safe, replacing watch()
+  const watchPassword = useWatch({ control, name: "password", defaultValue: "" });
+
+  // Derived inline — no separate useState needed
+  const passwordStrength = {
+    length:    watchPassword.length >= 6,
+    uppercase: /[A-Z]/.test(watchPassword),
+    lowercase: /[a-z]/.test(watchPassword),
+    number:    /[0-9]/.test(watchPassword),
+    special:   /[@$!%*?&]/.test(watchPassword),
+  };
 
   const onSubmit = async (data: RegisterForm) => {
     setIsSubmitting(true);
     try {
-      const { name, email, password, department } = data;
-      const res = await managerRegister({ name, email, password, department });
+      const { name, email, password } = data;
+      const res = await managerRegister({ name, email, password });
 
       if (res.success) {
         toast.success(res.message || "Manager registration successful! Please login.");
-        navigate("/manager/login");
+        setTimeout(() => navigate("/manager/login"), 2000);
       }
     } catch (error: unknown) {
       const err = error as AxiosError<ErrorResponse>;
@@ -65,17 +98,19 @@ export default function ManagerRegister() {
       if (err.response?.data) {
         const responseData = err.response.data;
         
-        if (responseData.errors && Array.isArray(responseData.errors)) {
-          responseData.errors.forEach((validationErr) => {
-            toast.error(validationErr.msg);
-          });
+        if (responseData.errors && Array.isArray(responseData.errors) && responseData.errors.length > 0) {
+          toast.error(responseData.errors[0].msg);
         } else if (responseData.message) {
           toast.error(responseData.message);
         } else {
           toast.error("Registration failed. Please try again.");
         }
+      } else if (err.code === "ECONNABORTED") {
+        toast.error("Request timeout. Please try again.");
+      } else if (err.message === "Network Error") {
+        toast.error("Network error. Please check your connection.");
       } else {
-        toast.error("Network error. Please check your connection and try again.");
+        toast.error("Registration failed. Please try again.");
       }
     } finally {
       setIsSubmitting(false);
@@ -99,7 +134,7 @@ export default function ManagerRegister() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <InputField
               label="Full Name"
               id="name"
@@ -120,24 +155,33 @@ export default function ManagerRegister() {
               error={errors.email?.message}
             />
 
-            <InputField
-              label="Department"
-              id="department"
-              type="text"
-              placeholder="e.g., IT, HR, Sales, Operations"
-              icon={<Briefcase className="h-4 w-4 text-gray-400" />}
-              {...register("department")}
-              error={errors.department?.message}
-            />
-
-            <PasswordField
-              label="Password"
-              id="password"
-              placeholder="••••••••"
-              icon={<Lock className="h-4 w-4 text-gray-400" />}
-              {...register("password")}
-              error={errors.password?.message}
-            />
+            {/* Password Field with Strength Indicator */}
+            <div>
+              <PasswordField
+                label="Password"
+                id="password"
+                placeholder="••••••••"
+                icon={<Lock className="h-4 w-4 text-gray-400" />}
+                {...register("password")}
+                error={errors.password?.message}
+              />
+              
+              {/* Password Strength Indicator */}
+              {watchPassword && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Password requirements:
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <RequirementCheck met={passwordStrength.length}    text="At least 6 characters" />
+                    <RequirementCheck met={passwordStrength.uppercase} text="One uppercase letter" />
+                    <RequirementCheck met={passwordStrength.lowercase} text="One lowercase letter" />
+                    <RequirementCheck met={passwordStrength.number}    text="One number" />
+                    <RequirementCheck met={passwordStrength.special}   text="One special character (@$!%*?&)" />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <PasswordField
               label="Confirm Password"
@@ -211,3 +255,17 @@ export default function ManagerRegister() {
     </div>
   );
 }
+
+// Helper component for password requirements
+const RequirementCheck = ({ met, text }: { met: boolean; text: string }) => (
+  <div className="flex items-center space-x-1">
+    {met ? (
+      <CheckCircle className="h-3 w-3 text-green-500" />
+    ) : (
+      <XCircle className="h-3 w-3 text-gray-400" />
+    )}
+    <span className={met ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-500"}>
+      {text}
+    </span>
+  </div>
+);

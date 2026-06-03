@@ -1,4 +1,4 @@
-// pages/admin/Request/AdminDashboard.tsx
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -17,14 +17,12 @@ import StatCard from '../../../components/common/Statscard';
 import RecentRequestsTable, { type RecentRequest } from '../../../components/common/RecentRequestTable';
 import type { DashboardStats } from '../../../types/requestTypes';
 
-// ── loader ───────────────────────────────────────────────────────────────────
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center h-96">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
   </div>
 );
 
-// ── component ────────────────────────────────────────────────────────────────
 const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);

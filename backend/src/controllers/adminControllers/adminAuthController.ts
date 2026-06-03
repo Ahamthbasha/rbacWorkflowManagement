@@ -1,11 +1,8 @@
-// controllers/adminAuthController.ts
 import { Request, Response, NextFunction } from "express";
 import AppError from "../../utils/appError";
 import { JwtService } from "../../services/jwtService";
 import User, { UserRole } from "../../models/userModel";
-import bcrypt from "bcryptjs";
 
-// Helper function for consistent cookie options
 const getCookieOptions = (maxAge: number) => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -33,28 +30,24 @@ export class AdminAuthController {
       });
 
       if (!existingAdmin) {
-        // Don't hash here — beforeCreate hook handles it
         await User.create({
           name: "Administrator",
           email: adminEmail,
-          password: adminPassword, // plain text — hook will hash it
+          password: adminPassword,
           role: UserRole.ADMIN,
           isActive: true,
           isVerified: true,
-          department: "System Administration",
         });
-        console.log("✅ Admin user created successfully");
+        console.log("Admin user created successfully");
       } else {
-        // Don't hash here — beforeUpdate hook handles it when password changes
-        await existingAdmin.update({ password: adminPassword }); // plain text
-        console.log("✅ Admin user already exists — password synced from .env");
+        await existingAdmin.update({ password: adminPassword });
+        console.log("Admin user already exists — password synced from .env");
       }
     } catch (error) {
       console.error("Error initializing admin:", error);
     }
   }
 
-  // Admin login - checks credentials from database
   login = async (
     req: Request,
     res: Response,
@@ -63,12 +56,10 @@ export class AdminAuthController {
     try {
       const { email, password } = req.body;
 
-      // Validate required fields
       if (!email || !password) {
         throw new AppError("Email and password are required", 400);
       }
 
-      // Find admin in database
       const admin = await User.findOne({
         where: { email, role: UserRole.ADMIN },
       });
@@ -77,36 +68,30 @@ export class AdminAuthController {
         throw new AppError("Invalid admin credentials", 401);
       }
 
-      // Check if admin is active
       if (!admin.isActive) {
         throw new AppError("Admin account is deactivated", 403);
       }
-      console.log("adminPassword", password);
-
-      // Verify password
       const isPasswordValid = await admin.comparePassword(password);
       if (!isPasswordValid) {
         throw new AppError("Invalid admin credentials", 401);
       }
 
-      // Generate tokens for admin
       const tokens = this.jwtService.generateTokenPair({
         userId: admin.id,
         email: admin.email,
         role: admin.role,
       });
 
-      // Set auth tokens in HTTP-only cookies
       res.cookie(
         "accessToken",
         tokens.accessToken,
         getCookieOptions(15 * 60 * 1000),
-      ); // 15 minutes
+      );
       res.cookie(
         "refreshToken",
         tokens.refreshToken,
         getCookieOptions(7 * 24 * 60 * 60 * 1000),
-      ); // 7 days
+      );
 
       res.status(200).json({
         success: true,
@@ -125,14 +110,12 @@ export class AdminAuthController {
     }
   };
 
-  // Admin logout
   logout = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
     try {
-      // Clear all auth cookies
       const clearOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

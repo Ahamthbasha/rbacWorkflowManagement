@@ -1,4 +1,4 @@
-// components/layout/Header.tsx
+
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { clearUserDetails } from "../../redux/slices/userSlice";

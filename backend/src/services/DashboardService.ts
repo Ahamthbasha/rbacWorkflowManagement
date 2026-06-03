@@ -1,4 +1,4 @@
-// services/dashboardService.ts
+
 import { Op, WhereOptions } from "sequelize";
 import RequestModel, { RequestAttributes, RequestStatus } from "../models/requestModel";
 import User from "../models/userModel";
@@ -9,7 +9,6 @@ const Request = RequestModel;
 export interface DashboardStatsConfig {
   userId?: string;
   userRole: string;
-  department?: string | null;
 }
 
 export interface StatusCounts {
@@ -31,11 +30,11 @@ export interface DashboardStats {
 
 export class DashboardService {
   static async getDashboardStats(config: DashboardStatsConfig): Promise<DashboardStats> {
-    const { userId, userRole, department } = config;
+    const { userId, userRole } = config;
 
     switch (userRole) {
       case "admin":   return this.getAdminStats();
-      case "manager": return this.getManagerStats(department);
+      case "manager": return this.getManagerStats();
       case "user":    return this.getUserStats(userId!);
       default:        throw new Error("Invalid user role");
     }
@@ -87,22 +86,22 @@ export class DashboardService {
   private static async getAdminStats(): Promise<DashboardStats> {
     return this.computeStats(
       {},
-      [{ model: User, as: "user", attributes: ["id", "name", "email", "department"] }],
+      [{ model: User, as: "user", attributes: ["id", "name", "email"] }],
     );
   }
 
-  private static async getManagerStats(department?: string | null): Promise<DashboardStats> {
-    const departmentUsers = await User.findAll({
-      where: { department: department ?? undefined, role: "user" },
+  private static async getManagerStats(): Promise<DashboardStats> {
+    const regularUsers = await User.findAll({
+      where: { role: "user" },
       attributes: ["id"],
     });
 
-    const userIds = departmentUsers.map((u) => u.id);
+    const userIds = regularUsers.map((u) => u.id);
     const whereClause: WhereOptions<RequestAttributes> =
       userIds.length > 0 ? { userId: { [Op.in]: userIds } } : {};
 
     return this.computeStats(whereClause, [
-      { model: User, as: "user",    attributes: ["id", "name", "email", "department"] },
+      { model: User, as: "user", attributes: ["id", "name", "email"] },
       { model: User, as: "manager", attributes: ["id", "name", "email"] },
     ]);
   }
@@ -117,18 +116,17 @@ export class DashboardService {
   static async getStatusDistribution(
     userRole: string,
     userId?: string,
-    department?: string | null,
   ): Promise<StatusCounts> {
     let whereClause: WhereOptions<RequestAttributes> = {};
 
     if (userRole === "user" && userId) {
       whereClause = { userId } as WhereOptions<RequestAttributes>;
-    } else if (userRole === "manager" && department) {
-      const departmentUsers = await User.findAll({
-        where: { department, role: "user" },
+    } else if (userRole === "manager") {
+      const regularUsers = await User.findAll({
+        where: { role: "user" },
         attributes: ["id"],
       });
-      const userIds = departmentUsers.map((u) => u.id);
+      const userIds = regularUsers.map((u) => u.id);
       whereClause = userIds.length > 0 ? { userId: { [Op.in]: userIds } } : {};
     }
 
